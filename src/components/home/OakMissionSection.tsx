@@ -33,12 +33,10 @@ function generateRoots(width: number, height: number): Segment[] {
     depth: number, progress: number,
     maxDepth: number
   ) {
-    // Stop: minimum thickness is fat (no wispy tips), max 3 levels deep,
-    // and don't go past ~40% from the right edge
-    if (thickness < 8 || depth > maxDepth || x < width * 0.15) return;
+    if (thickness < 2.5 || depth > maxDepth || x < -30) return;
 
-    const segLen = 40 + rand() * 50; // LONG segments = big sweeping curves
-    const curve = (rand() - 0.5) * 0.18; // gentle, broad turns
+    const segLen = 22 + rand() * 30;
+    const curve = (rand() - 0.5) * 0.25;
     const newAngle = angle + curve;
     const x2 = x + Math.cos(newAngle) * segLen;
     const y2 = y + Math.sin(newAngle) * segLen;
@@ -48,35 +46,33 @@ function generateRoots(width: number, height: number): Segment[] {
       thickness,
       depth,
       birthProgress: Math.min(progress, 0.95),
-      color: depth === 0 ? '#4A3322' : depth === 1 ? '#5C3D28' : '#6B4832',
+      color: depth === 0 ? '#4A3322' : depth === 1 ? '#5C3D28' : depth <= 3 ? '#6B4832' : '#7A5438',
       grainOffset: rand() * 10,
     });
 
-    // Taper slowly — roots stay thick
-    const newThickness = thickness * (0.97 - rand() * 0.02);
-    const newProgress = progress + 0.012 + rand() * 0.008;
+    const newThickness = thickness * (0.96 - rand() * 0.03);
+    const newProgress = progress + 0.008 + rand() * 0.006;
 
-    // Continue main branch
     growBranch(x2, y2, newAngle, newThickness, depth, newProgress, maxDepth);
 
-    // Rare branching — only thick roots split, and not often
-    const branchChance = depth === 0 ? 0.07 : 0.05;
-    if (rand() < branchChance && thickness > 18) {
-      const branchAngle = newAngle + (rand() > 0.5 ? 1 : -1) * (0.4 + rand() * 0.5);
-      const branchThickness = thickness * (0.45 + rand() * 0.2);
-      growBranch(x2, y2, branchAngle, branchThickness, depth + 1, newProgress + 0.03, maxDepth);
+    const branchChance = depth === 0 ? 0.10 : depth === 1 ? 0.08 : 0.06;
+    if (rand() < branchChance && thickness > 4) {
+      const branchAngle = newAngle + (rand() > 0.5 ? 1 : -1) * (0.5 + rand() * 0.7);
+      const branchThickness = thickness * (0.4 + rand() * 0.25);
+      growBranch(x2, y2, branchAngle, branchThickness, depth + 1, newProgress + 0.02, maxDepth);
     }
   }
 
-  // 3 main root trunks — thick, starting from right edge
+  // 4 main root trunks — slightly thicker than the version you liked
   const startPoints = [
-    { y: centerY - height * 0.12, angle: Math.PI + 0.12, thickness: 55 },
-    { y: centerY + height * 0.02, angle: Math.PI - 0.06, thickness: 60 },
-    { y: centerY + height * 0.16, angle: Math.PI + 0.10, thickness: 52 },
+    { y: centerY - height * 0.18, angle: Math.PI + 0.15, thickness: 38 },
+    { y: centerY - height * 0.04, angle: Math.PI - 0.05, thickness: 44 },
+    { y: centerY + height * 0.10, angle: Math.PI + 0.08, thickness: 40 },
+    { y: centerY + height * 0.22, angle: Math.PI - 0.12, thickness: 36 },
   ];
 
   startPoints.forEach((sp, i) => {
-    growBranch(width + 10, sp.y, sp.angle, sp.thickness, 0, i * 0.03, 3);
+    growBranch(width + 10, sp.y, sp.angle, sp.thickness, 0, i * 0.02, 5);
   });
 
   return segments;
