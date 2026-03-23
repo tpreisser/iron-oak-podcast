@@ -19,39 +19,42 @@ export function ConceptSection() {
 
     const lineElements = containerRef.current.querySelectorAll('.concept-line');
 
-    // ONE timeline, ONE ScrollTrigger — everything sequenced inside
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: sectionRef.current,
         start: 'top top',
-        end: '+=100%',
+        end: '+=200%', // more scroll room so lines breathe
         pin: true,
-        scrub: 0.5,
+        scrub: 0.8, // slightly smoother scrub
       },
     });
 
-    // Each line: fade in → hold → dim, sequenced in the timeline
+    // Layout: each line gets ~20% of timeline
+    // fade in (3%) → hold (12%) → fade out (3%) → gap (2%)
     lineElements.forEach((line, i) => {
-      const position = i * 0.22; // each line gets ~22% of timeline
+      const start = i * 0.20;
 
-      // Fade in + slide up
+      // Smooth fade in
       tl.fromTo(line,
-        { opacity: 0, y: 25 },
-        { opacity: 1, y: 0, duration: 0.08, ease: 'power2.out' },
-        position
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.05, ease: 'power2.out' },
+        start
       );
 
-      // Dim when next line comes (skip last)
+      // Dim out before next line (skip last)
       if (i < lines.length - 1) {
         tl.to(line,
-          { opacity: 0.15, duration: 0.06 },
-          position + 0.18
+          { opacity: 0.1, y: -8, duration: 0.04, ease: 'power2.in' },
+          start + 0.16
         );
       }
     });
 
-    // Hold the last line briefly, then fade all out
-    tl.to(containerRef.current, { opacity: 0, duration: 0.08 }, 0.92);
+    // Last line holds, then everything fades
+    tl.to(containerRef.current,
+      { opacity: 0, duration: 0.06, ease: 'power2.in' },
+      0.90
+    );
   }, []);
 
   return (
