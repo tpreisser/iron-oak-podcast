@@ -28,13 +28,10 @@ export function ForgeIntro() {
   }, []);
 
   useEffect(() => {
-    // Check if already seen this session
-    if (sessionStorage.getItem('iron-oak-intro-seen')) return;
     // Check reduced motion
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     setVisible(true);
-    sessionStorage.setItem('iron-oak-intro-seen', '1');
 
     // Show text after 1s
     const textTimer = setTimeout(() => setTextVisible(true), 1000);
