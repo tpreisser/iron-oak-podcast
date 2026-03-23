@@ -1,32 +1,52 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { mainNavItems } from '@/data/navigation';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { MagneticElement } from '@/components/ui/MagneticElement';
 import { MobileMenu } from './MobileMenu';
 import { NAV_SCROLL_THRESHOLD } from '@/lib/constants';
+
+const navSections = [
+  { label: 'About', id: 'concept' },
+  { label: 'Series', id: 'featured-series' },
+  { label: 'Hosts', id: 'hosts' },
+  { label: 'Subscribe', id: 'subscribe' },
+];
 
 export function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
+  const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > NAV_SCROLL_THRESHOLD);
+
+      // Determine active section
+      const sections = navSections.map(s => ({
+        id: s.id,
+        el: document.getElementById(s.id),
+      })).filter(s => s.el);
+
+      let current = '';
+      for (const section of sections) {
+        if (section.el && section.el.getBoundingClientRect().top <= 150) {
+          current = section.id;
+        }
+      }
+      setActiveSection(current);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
+  const scrollTo = useCallback((id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
     setMobileOpen(false);
-  }, [pathname]);
+  }, []);
 
   return (
     <>
@@ -39,38 +59,40 @@ export function Navigation() {
         )}
       >
         <div className="container-default flex items-center justify-between h-16 lg:h-20">
-          {/* Logo: IRON in iron color, & in oak, OAK in oak */}
-          <Link href="/" className="flex items-center gap-0 text-xl font-bold tracking-wider">
+          {/* Logo — scrolls to top */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex items-center gap-0 text-xl font-bold tracking-wider"
+          >
             <span className="text-[var(--accent-iron)]">IRON</span>
             <span className="text-[var(--accent-oak)] mx-1">&amp;</span>
             <span className="text-[var(--accent-oak)]">OAK</span>
-          </Link>
+          </button>
 
-          {/* Desktop nav links */}
+          {/* Desktop nav links — scroll to sections */}
           <div className="hidden lg:flex items-center gap-8">
-            {mainNavItems.map((item) => (
-              <MagneticElement key={item.href} strength={0.2}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'text-sm font-medium transition-colors duration-300',
-                    pathname === item.href
-                      ? 'text-[var(--accent-oak)]'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              </MagneticElement>
+            {navSections.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollTo(item.id)}
+                className={cn(
+                  'text-sm font-medium transition-colors duration-300',
+                  activeSection === item.id
+                    ? 'text-[var(--accent-oak)]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                )}
+              >
+                {item.label}
+              </button>
             ))}
           </div>
 
-          {/* Right side: theme toggle + subscribe CTA + hamburger */}
+          {/* Right side */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
 
-            <Link
-              href="/subscribe"
+            <button
+              onClick={() => scrollTo('subscribe')}
               className={cn(
                 'hidden lg:inline-flex items-center justify-center h-9 px-5 text-sm font-medium',
                 'rounded-full bg-[var(--accent-oak)] text-white',
@@ -80,7 +102,7 @@ export function Navigation() {
               )}
             >
               Subscribe
-            </Link>
+            </button>
 
             {/* Mobile hamburger */}
             <button
@@ -105,7 +127,7 @@ export function Navigation() {
         </div>
       </nav>
 
-      <MobileMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <MobileMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)} onScrollTo={scrollTo} />
     </>
   );
 }

@@ -1,22 +1,25 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useGSAP } from '@/hooks/useGSAP';
-import { mainNavItems } from '@/data/navigation';
 import { cn } from '@/lib/utils';
+
+const navSections = [
+  { label: 'About', id: 'concept' },
+  { label: 'Series', id: 'featured-series' },
+  { label: 'Hosts', id: 'hosts' },
+  { label: 'Subscribe', id: 'subscribe' },
+];
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onScrollTo: (id: string) => void;
 }
 
-export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+export function MobileMenu({ isOpen, onClose, onScrollTo }: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
 
-  // Stagger animation for menu items
   useGSAP((gsap) => {
     if (!menuRef.current) return;
     const items = menuRef.current.querySelectorAll('.mobile-menu-item');
@@ -29,7 +32,6 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     }
   }, [isOpen]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -38,6 +40,11 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
+
+  const handleClick = (id: string) => {
+    onScrollTo(id);
+    onClose();
+  };
 
   return (
     <div
@@ -50,29 +57,15 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       style={{ top: '64px' }}
     >
       <div className="flex flex-col items-center gap-8">
-        {mainNavItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onClose}
-            className={cn(
-              'mobile-menu-item font-[family-name:var(--font-display)] text-3xl transition-colors duration-300',
-              pathname === item.href
-                ? 'text-[var(--accent-oak)]'
-                : 'text-[var(--text-primary)] hover:text-[var(--accent-oak)]'
-            )}
+        {navSections.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => handleClick(item.id)}
+            className="mobile-menu-item font-[family-name:var(--font-display)] text-3xl text-[var(--text-primary)] hover:text-[var(--accent-oak)] transition-colors duration-300"
           >
             {item.label}
-          </Link>
+          </button>
         ))}
-
-        <Link
-          href="/subscribe"
-          onClick={onClose}
-          className="mobile-menu-item mt-4 inline-flex items-center justify-center h-12 px-8 text-lg font-medium rounded-full bg-[var(--accent-oak)] text-white hover:bg-[var(--accent-oak-light)] transition-colors duration-300"
-        >
-          Subscribe
-        </Link>
       </div>
     </div>
   );
