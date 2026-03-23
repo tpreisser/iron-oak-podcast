@@ -23,7 +23,7 @@ export function ConceptSection() {
     ScrollTrigger.create({
       trigger: sectionRef.current,
       start: 'top top',
-      end: `+=${lines.length * 100}%`,
+      end: `+=150%`,
       pin: true,
     });
 

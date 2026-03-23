@@ -3,19 +3,19 @@
 import { useRef } from 'react';
 import { useGSAP } from '@/hooks/useGSAP';
 import { ButtonLink } from '@/components/ui/Button';
+import { Logo } from '@/components/ui/Logo';
 import { GradientBackground } from '@/components/effects/GradientBackground';
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
 
-  // GSAP entrance timeline
   useGSAP((gsap) => {
     if (!sectionRef.current) return;
     const section = sectionRef.current;
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-    tl.from(section.querySelector('.hero-label'), { opacity: 0, y: 20, duration: 0.8 }, 0)
+    tl.from(section.querySelector('.hero-logo'), { opacity: 0, y: 20, duration: 0.8 }, 0)
       .from(section.querySelector('.hero-headline'), { opacity: 0, y: 40, duration: 1.2 }, 0.2)
       .from(section.querySelector('.hero-subtitle'), { opacity: 0, y: 20, duration: 0.8 }, 0.8)
       .from(section.querySelector('.hero-ctas'), { opacity: 0, y: 20, duration: 0.8 }, 1.0)
@@ -29,38 +29,29 @@ export function HeroSection() {
       id="hero"
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Animated gradient background */}
       <GradientBackground className="z-0" />
 
-      {/* Content — centered */}
       <div className="relative z-10 container-default text-center max-w-4xl mx-auto px-6">
-        {/* Label */}
-        <p className="hero-label font-[family-name:var(--font-accent)] text-sm tracking-[0.2em] uppercase text-[var(--accent-oak)] mb-6">
-          The Iron &amp; Oak Podcast
-        </p>
+        {/* Logo — same component as everywhere */}
+        <div className="hero-logo mb-8">
+          <Logo size="lg" />
+        </div>
 
-        {/* Headline */}
         <h1 className="hero-headline font-[family-name:var(--font-display)] text-[var(--text-hero)] leading-[1.1] text-[var(--text-primary)] mb-6">
           Where Iron Sharpens Iron<br />
           and Deep Roots Hold
         </h1>
 
-        {/* Subtitle */}
         <p className="hero-subtitle text-[var(--text-body)] text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 text-lg md:text-xl">
           Hard questions. Honest faith. No easy answers.
         </p>
 
-        {/* CTAs */}
-        <div className="hero-ctas flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-          <ButtonLink href="/episodes" variant="primary" size="lg" sparkTrigger>
+        <div className="hero-ctas mb-8">
+          <ButtonLink href="#subscribe" variant="primary" size="lg" sparkTrigger>
             Listen Now
-          </ButtonLink>
-          <ButtonLink href="/questions" variant="secondary" size="lg">
-            Browse Questions
           </ButtonLink>
         </div>
 
-        {/* Newsletter input */}
         <div className="hero-email max-w-md mx-auto">
           <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
             <input
@@ -78,7 +69,6 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
       <div className="hero-scroll absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
         <span className="text-xs text-[var(--text-tertiary)] tracking-wider uppercase">Scroll</span>
         <div className="w-5 h-8 rounded-full border border-[var(--border-default)] flex items-start justify-center p-1.5">
