@@ -33,7 +33,7 @@ function generateRoots(width: number, height: number): Segment[] {
     depth: number, progress: number,
     maxDepth: number
   ) {
-    if (thickness < 2.5 || depth > maxDepth || x < -30) return;
+    if (thickness < 2.5 || depth > maxDepth || x < width * 0.2) return;
 
     const segLen = 22 + rand() * 30;
     const curve = (rand() - 0.5) * 0.18; // gentler curves
@@ -65,10 +65,10 @@ function generateRoots(width: number, height: number): Segment[] {
 
   // 4 main root trunks — slightly thicker than the version you liked
   const startPoints = [
-    { y: centerY - height * 0.18, angle: Math.PI + 0.15, thickness: 38 },
-    { y: centerY - height * 0.04, angle: Math.PI - 0.05, thickness: 44 },
-    { y: centerY + height * 0.10, angle: Math.PI + 0.08, thickness: 40 },
-    { y: centerY + height * 0.22, angle: Math.PI - 0.12, thickness: 36 },
+    { y: centerY - height * 0.15, angle: Math.PI + 0.12, thickness: 38 },
+    { y: centerY - height * 0.05, angle: Math.PI - 0.06, thickness: 44 },
+    { y: centerY + height * 0.05, angle: Math.PI + 0.08, thickness: 40 },
+    { y: centerY + height * 0.15, angle: Math.PI - 0.10, thickness: 36 },
   ];
 
   startPoints.forEach((sp, i) => {
