@@ -33,10 +33,10 @@ function generateRoots(width: number, height: number): Segment[] {
     depth: number, progress: number,
     maxDepth: number
   ) {
-    if (thickness < 2.5 || depth > maxDepth || x < width * 0.2) return;
+    if (thickness < 2.5 || depth > maxDepth) return;
 
     const segLen = 22 + rand() * 30;
-    const curve = (rand() - 0.5) * 0.18; // gentler curves
+    const curve = (rand() - 0.5) * 0.18;
     const newAngle = angle + curve;
     const x2 = x + Math.cos(newAngle) * segLen;
     const y2 = y + Math.sin(newAngle) * segLen;
@@ -50,7 +50,11 @@ function generateRoots(width: number, height: number): Segment[] {
       grainOffset: rand() * 10,
     });
 
-    const newThickness = thickness * (0.96 - rand() * 0.03);
+    // Taper faster the further from the right edge — natural die-off
+    const distFromRight = (width - x) / width; // 0 at right edge, 1 at left edge
+    const distanceTaper = 0.93 - distFromRight * 0.08; // gets harsher further left
+    const randomTaper = 1 - rand() * 0.04;
+    const newThickness = thickness * distanceTaper * randomTaper;
     const newProgress = progress + 0.008 + rand() * 0.006;
 
     growBranch(x2, y2, newAngle, newThickness, depth, newProgress, maxDepth);
