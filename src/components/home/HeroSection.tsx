@@ -29,7 +29,7 @@ export function HeroSection() {
     >
       <GradientBackground className="z-0" />
 
-      <div className="relative z-10 container-default px-8 md:px-12 lg:px-16 w-full">
+      <div className="relative z-10 w-full px-10 md:px-16 lg:px-24 xl:px-32">
         {/* Two-column: text left, logo right */}
         <div className="flex flex-col-reverse lg:flex-row items-center gap-10 lg:gap-16">
           {/* Text — left side */}
