@@ -1,26 +1,173 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================
+   IRON & OAK PODCAST — Design System
+   ============================================================
+   Dark mode is DEFAULT. Light mode via [data-theme="light"].
+   All tokens as CSS custom properties for runtime theming.
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   Tailwind v4 Theme Registration
+   Maps CSS vars → Tailwind utilities (bg-iron, text-oak, etc.)
+   ------------------------------------------------------------ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-bg-accent-surface: var(--bg-accent-surface);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-iron: var(--accent-iron);
+  --color-iron-light: var(--accent-iron-light);
+  --color-oak: var(--accent-oak);
+  --color-oak-light: var(--accent-oak-light);
+  --color-border-default: var(--border-default);
+  --color-border-hover: var(--border-hover);
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "DM Sans", sans-serif;
+  --font-accent: "JetBrains Mono", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ------------------------------------------------------------
+   Design Tokens — Dark Mode (DEFAULT)
+   ------------------------------------------------------------ */
+:root {
+  /* Backgrounds */
+  --bg-primary: #0F1114;
+  --bg-secondary: #1A1D23;
+  --bg-tertiary: #242830;
+  --bg-accent-surface: #2A1F14;
+
+  /* Text */
+  --text-primary: #F2EDE8;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
+
+  /* Accent — Iron (steel blue) */
+  --accent-iron: #8A9BAE;
+  --accent-iron-light: #B8C5D4;
+
+  /* Accent — Oak (warm amber) */
+  --accent-oak: #C4843E;
+  --accent-oak-light: #D4A054;
+  --accent-oak-glow: rgba(196, 132, 62, 0.15);
+
+  /* Borders & Shadows */
+  --border-default: #2A2E36;
+  --border-hover: #3A3F4A;
+  --shadow-glow: 0 0 40px rgba(196, 132, 62, 0.12);
+
+  /* Typography Scale */
+  --text-hero: clamp(3rem, 8vw, 7rem);
+  --text-h1: clamp(2.25rem, 5vw, 4rem);
+  --text-h2: clamp(1.75rem, 3.5vw, 2.5rem);
+  --text-h3: clamp(1.25rem, 2vw, 1.75rem);
+  --text-body: clamp(1rem, 1.1vw, 1.125rem);
+  --text-small: clamp(0.875rem, 0.9vw, 0.9375rem);
+  --text-xs: 0.75rem;
+
+  /* Spacing */
+  --section-padding: clamp(4rem, 10vh, 8rem);
+  --container-max: 1280px;
+  --container-wide: 1440px;
+
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 2rem;
+}
+
+/* ------------------------------------------------------------
+   Design Tokens — Light Mode
+   ------------------------------------------------------------ */
+[data-theme="light"] {
+  --bg-primary: #FAF8F5;
+  --bg-secondary: #F0ECE6;
+  --bg-tertiary: #FFFFFF;
+  --text-primary: #1A1D23;
+  --text-secondary: #4B5563;
+  --text-tertiary: #6B7280;
+  --accent-iron: #5A6B7E;
+  --accent-iron-light: #7A8B9E;
+  --accent-oak: #B5742E;
+  --accent-oak-light: #C4843E;
+  --accent-oak-glow: rgba(181, 116, 46, 0.12);
+  --border-default: #E5E1DB;
+  --border-hover: #D5D1CB;
+  --shadow-glow: 0 0 40px rgba(181, 116, 46, 0.08);
+}
+
+/* ------------------------------------------------------------
+   Global Base Styles
+   ------------------------------------------------------------ */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: auto; /* Lenis handles smooth scroll */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "DM Sans", sans-serif;
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--accent-oak);
+  color: var(--bg-primary);
+}
+
+/* ------------------------------------------------------------
+   Utility Classes
+   ------------------------------------------------------------ */
+.container-default {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.container-wide {
+  max-width: var(--container-wide);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.section-padding {
+  padding-top: var(--section-padding);
+  padding-bottom: var(--section-padding);
+}
+
+.text-gradient-oak {
+  background: linear-gradient(135deg, var(--accent-oak), var(--accent-oak-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-iron {
+  background: linear-gradient(135deg, var(--accent-iron), var(--accent-iron-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ------------------------------------------------------------
+   Accessibility — Reduced Motion
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
