@@ -1,31 +1,30 @@
 'use client';
 
+import Image from 'next/image';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { cn } from '@/lib/utils';
 
 export function SponsorsSection() {
   return (
     <section className="section-padding bg-[var(--bg-primary)]">
-      <div className="container-default max-w-4xl mx-auto">
-        <ScrollReveal className="text-center mb-16">
+      <div className="max-w-4xl mx-auto px-8 md:px-12 lg:px-16">
+        <ScrollReveal className="text-center mb-12">
           <span className="font-[family-name:var(--font-accent)] text-sm tracking-[0.2em] uppercase text-[var(--accent-iron-light)]">
             Sponsored By
           </span>
         </ScrollReveal>
 
-        {/* Inner Tech — primary sponsor, big and prominent */}
-        <ScrollReveal delay={0.1} className="text-center mb-16">
-          <div className="inline-block px-12 py-10 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--bg-tertiary)] hover:border-[var(--accent-oak)]/30 transition-all duration-300">
-            <h3 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl lg:text-6xl text-[var(--text-primary)] font-bold tracking-wide mb-2">
-              Inner Tech
-            </h3>
-            <p className="font-[family-name:var(--font-accent)] text-sm tracking-[0.15em] text-[var(--text-secondary)]">
-              Wichita, Kansas
-            </p>
-          </div>
+        {/* Intertech — logo image, big and centered */}
+        <ScrollReveal delay={0.1} className="flex justify-center mb-16">
+          <Image
+            src="/images/intertech-logo.png"
+            alt="Intertech — Wichita, Kansas"
+            width={500}
+            height={200}
+            className="w-[300px] md:w-[400px] lg:w-[500px] h-auto"
+          />
         </ScrollReveal>
 
-        {/* CTA for more partners */}
         <ScrollReveal delay={0.2} className="text-center">
           <p className="text-[var(--text-secondary)] mb-4">
             Interested in partnering with Iron &amp; Oak?
