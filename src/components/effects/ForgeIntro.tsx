@@ -187,12 +187,7 @@ export function ForgeIntro() {
   }, [visible]);
 
   useEffect(() => {
-    if (visible && !fadingOut) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
+    // Don't toggle overflow — html has overflow-y: scroll always to prevent jolt
   }, [visible, fadingOut]);
 
   if (!visible) return null;

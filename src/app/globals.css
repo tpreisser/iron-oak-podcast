@@ -109,7 +109,8 @@
 }
 
 html {
-  scroll-behavior: auto; /* Lenis handles smooth scroll */
+  scroll-behavior: auto;
+  overflow-y: scroll; /* always show scrollbar to prevent layout jolt */
 }
 
 body {

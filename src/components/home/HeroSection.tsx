@@ -15,51 +15,53 @@ export function HeroSection() {
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-    tl.from(section.querySelector('.hero-logo'), { opacity: 0, y: 20, duration: 0.8 }, 0)
-      .from(section.querySelector('.hero-headline'), { opacity: 0, y: 40, duration: 1.2 }, 0.2)
-      .from(section.querySelector('.hero-subtitle'), { opacity: 0, y: 20, duration: 0.8 }, 0.8)
-      .from(section.querySelector('.hero-ctas'), { opacity: 0, y: 20, duration: 0.8 }, 1.0)
-      .from(section.querySelector('.hero-email'), { opacity: 0, y: 20, duration: 0.8 }, 1.2)
-      .from(section.querySelector('.hero-scroll'), { opacity: 0, duration: 0.8 }, 1.4);
+    tl.from(section.querySelector('.hero-logo'), { opacity: 0, scale: 0.9, duration: 1 }, 0)
+      .from(section.querySelector('.hero-text'), { opacity: 0, x: 30, duration: 1 }, 0.3)
+      .from(section.querySelector('.hero-email'), { opacity: 0, y: 20, duration: 0.8 }, 1.0)
+      .from(section.querySelector('.hero-scroll'), { opacity: 0, duration: 0.8 }, 1.2);
   }, []);
 
   return (
     <section
       ref={sectionRef}
       id="hero"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen flex items-center overflow-hidden"
     >
       <GradientBackground className="z-0" />
 
-      <div className="relative z-10 container-default text-center max-w-4xl mx-auto px-6">
-        {/* Logo */}
-        <div className="hero-logo mb-8">
-          <Image
-            src="/images/iron-oak-logo.png"
-            alt="The Iron & Oak Podcast"
-            width={300}
-            height={300}
-            className="mx-auto w-[200px] md:w-[280px] lg:w-[320px] h-auto"
-            priority
-          />
+      <div className="relative z-10 container-default px-6 w-full">
+        {/* Two-column: logo left, text right */}
+        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+          {/* Logo — left side */}
+          <div className="hero-logo flex-shrink-0">
+            <Image
+              src="/images/iron-oak-logo.png"
+              alt="The Iron & Oak Podcast"
+              width={400}
+              height={400}
+              className="w-[220px] md:w-[300px] lg:w-[360px] h-auto"
+              priority
+            />
+          </div>
+
+          {/* Text — right side */}
+          <div className="hero-text text-center lg:text-left">
+            <h1 className="font-[family-name:var(--font-display)] text-[var(--text-hero)] leading-[1.1] text-[var(--text-primary)] mb-5">
+              Where Iron Sharpens Iron and Deep Roots Hold
+            </h1>
+
+            <p className="text-[var(--text-secondary)] max-w-xl mb-8 text-lg md:text-xl">
+              Hard questions. Honest faith. No easy answers.
+            </p>
+
+            <ButtonLink href="#subscribe" variant="primary" size="lg" sparkTrigger>
+              Listen Now
+            </ButtonLink>
+          </div>
         </div>
 
-        <h1 className="hero-headline font-[family-name:var(--font-display)] text-[var(--text-hero)] leading-[1.1] text-[var(--text-primary)] mb-6">
-          Where Iron Sharpens Iron<br />
-          and Deep Roots Hold
-        </h1>
-
-        <p className="hero-subtitle text-[var(--text-body)] text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 text-lg md:text-xl">
-          Hard questions. Honest faith. No easy answers.
-        </p>
-
-        <div className="hero-ctas mb-8">
-          <ButtonLink href="#subscribe" variant="primary" size="lg" sparkTrigger>
-            Listen Now
-          </ButtonLink>
-        </div>
-
-        <div className="hero-email max-w-md mx-auto">
+        {/* Email below both columns */}
+        <div className="hero-email max-w-md mx-auto lg:mx-0 mt-12">
           <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
             <input
               type="email"
