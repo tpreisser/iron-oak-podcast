@@ -5,7 +5,6 @@ import { IronAnvilSection } from '@/components/home/IronAnvilSection';
 import { FeaturedSeries } from '@/components/home/FeaturedSeries';
 import { HostsSection } from '@/components/home/HostsSection';
 import { SponsorsSection } from '@/components/home/SponsorsSection';
-import { SubscribeSection } from '@/components/home/SubscribeSection';
 
 export default function Home() {
   return (
@@ -17,7 +16,6 @@ export default function Home() {
       <FeaturedSeries />
       <HostsSection />
       <SponsorsSection />
-      <SubscribeSection />
     </>
   );
 }
