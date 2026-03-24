@@ -9,23 +9,30 @@ const lines = [
   'Iron & Oak is a space where faith gets pressure-tested and Christ remains the answer.',
 ];
 
-// Ember particle for the background
+// Same ember system as ForgeIntro
 interface Ember {
   x: number;
   y: number;
   vx: number;
   vy: number;
   size: number;
-  opacity: number;
-  decay: number;
+  life: number;
+  maxLife: number;
+  turbulencePhase: number;
+  turbulenceSpeed: number;
 }
 
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
+function emberColor(life: number, maxLife: number): string {
+  const t = life / maxLife;
+  if (t > 0.7) {
+    return `rgba(255, ${200 + t * 55}, ${140 + t * 60}, ${0.7 + t * 0.3})`;
+  } else if (t > 0.4) {
+    return `rgba(255, ${120 + t * 120}, ${20 + t * 40}, ${t * 0.9})`;
+  } else if (t > 0.15) {
+    return `rgba(${180 + t * 200}, ${50 + t * 150}, 10, ${t * 0.8})`;
+  } else {
+    return `rgba(${80 + t * 600}, ${15 + t * 200}, 5, ${t * 4})`;
+  }
 }
 
 export function ConceptSection() {
@@ -35,7 +42,7 @@ export function ConceptSection() {
   const rafRef = useRef(0);
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Ember background
+  // Ember background — copied from ForgeIntro
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -49,51 +56,82 @@ export function ConceptSection() {
     resize();
     window.addEventListener('resize', resize);
 
-    const rand = seededRandom(123);
+    const spawnEmber = (scattered?: boolean): Ember => {
+      const x = Math.random() * canvas.width;
+      const y = scattered
+        ? Math.random() * canvas.height
+        : canvas.height + Math.random() * 60;
 
-    const spawnEmber = (): Ember => ({
-      x: rand() * canvas.width,
-      y: canvas.height + rand() * 20,
-      vx: (rand() - 0.5) * 0.8,
-      vy: -(0.3 + rand() * 1.2),
-      size: 1 + rand() * 3,
-      opacity: 0.5 + rand() * 0.5,
-      decay: 0.001 + rand() * 0.003,
-    });
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
+      const speed = 0.8 + Math.random() * 2.5;
 
-    embersRef.current = Array.from({ length: 80 }, () => {
-      const e = spawnEmber();
-      e.y = rand() * canvas.height;
-      return e;
-    });
+      return {
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 0.8 + Math.random() * 2,
+        life: 1,
+        maxLife: 1 + Math.random() * 2,
+        turbulencePhase: Math.random() * Math.PI * 2,
+        turbulenceSpeed: 0.01 + Math.random() * 0.025,
+      };
+    };
+
+    embersRef.current = Array.from({ length: 60 }, () => spawnEmber(true));
+
+    let time = 0;
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      time += 1;
 
       embersRef.current.forEach((ember, i) => {
-        ember.x += ember.vx + Math.sin(ember.y * 0.01) * 0.2;
-        ember.y += ember.vy;
-        ember.opacity -= ember.decay;
+        const turbX = Math.sin(ember.turbulencePhase + time * ember.turbulenceSpeed) * 0.4;
+        const turbY = Math.cos(ember.turbulencePhase * 1.5 + time * ember.turbulenceSpeed * 0.6) * 0.2;
 
-        if (ember.opacity <= 0 || ember.y < -10) {
-          embersRef.current[i] = spawnEmber();
+        ember.x += ember.vx + turbX;
+        ember.y += ember.vy + turbY;
+        ember.vx *= 0.999;
+        ember.vy *= 0.999;
+        ember.life -= 0.006;
+
+        if (ember.life <= 0 || ember.y < -20 || ember.x < -20 || ember.x > canvas.width + 20) {
+          embersRef.current[i] = spawnEmber(false);
           return;
         }
 
-        // Glow
-        const g = ctx.createRadialGradient(ember.x, ember.y, 0, ember.x, ember.y, ember.size * 4);
-        g.addColorStop(0, `rgba(180, 110, 40, ${ember.opacity * 0.25})`);
-        g.addColorStop(1, 'rgba(140, 80, 20, 0)');
+        const t = ember.life / ember.maxLife;
+        const color = emberColor(ember.life, ember.maxLife);
+
+        ctx.save();
+        ctx.translate(ember.x, ember.y);
+
+        // Soft glow
+        const glowSize = ember.size * 5;
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowSize);
+        glow.addColorStop(0, `rgba(255, ${100 + t * 100}, 20, ${t * 0.12})`);
+        glow.addColorStop(1, 'rgba(255, 60, 0, 0)');
         ctx.beginPath();
-        ctx.arc(ember.x, ember.y, ember.size * 5, 0, Math.PI * 2);
-        ctx.fillStyle = g;
+        ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
         ctx.fill();
 
-        // Core — brighter
+        // Core dot
         ctx.beginPath();
-        ctx.arc(ember.x, ember.y, ember.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(220, 150, 60, ${ember.opacity * 0.85})`;
+        ctx.arc(0, 0, ember.size, 0, Math.PI * 2);
+        ctx.fillStyle = color;
         ctx.fill();
+
+        // Bright center on fresh embers
+        if (t > 0.5) {
+          ctx.beginPath();
+          ctx.arc(0, 0, ember.size * 0.35, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 220, ${(t - 0.5) * 1.2})`;
+          ctx.fill();
+        }
+
+        ctx.restore();
       });
 
       rafRef.current = requestAnimationFrame(draw);
@@ -106,7 +144,7 @@ export function ConceptSection() {
     };
   }, []);
 
-  // Track scroll progress through section
+  // Track scroll progress
   useEffect(() => {
     const handleScroll = () => {
       const section = sectionRef.current;
@@ -126,32 +164,26 @@ export function ConceptSection() {
       ref={sectionRef}
       id="concept"
       className="relative bg-[var(--bg-primary)]"
-      style={{ height: `${lines.length * 100 + 50}vh` }}
+      style={{ height: `${lines.length * 120 + 60}vh` }}
     >
-      {/* Sticky viewport container */}
       <div className="sticky top-0 h-screen overflow-hidden">
-        {/* Ember canvas background */}
         <canvas ref={canvasRef} className="absolute inset-0 z-0" />
 
-        {/* Text crawl — flat, in your face */}
         <div className="absolute inset-0 z-10 flex items-center justify-center">
           <div className="w-full max-w-3xl px-8">
-            {/* Crawl text container — moves upward based on scroll */}
             <div
               style={{
                 transform: `translateY(${100 - scrollProgress * 250}%)`,
-                transition: 'none',
               }}
             >
               {lines.map((line, i) => {
-                // Fade based on vertical position in the crawl
                 const lineProgress = scrollProgress * lines.length - i;
                 const opacity = lineProgress < 0 ? 0 : lineProgress > 2.5 ? 0 : Math.min(1, lineProgress) * Math.max(0, 1 - (lineProgress - 1.5));
 
                 return (
                   <p
                     key={i}
-                    className="font-[family-name:var(--font-display)] text-[var(--text-h2)] leading-relaxed text-[var(--text-primary)] text-center mb-16"
+                    className="font-[family-name:var(--font-display)] text-[var(--text-h2)] leading-relaxed text-[var(--text-primary)] text-center mb-32"
                     style={{ opacity }}
                   >
                     {line}
@@ -162,9 +194,7 @@ export function ConceptSection() {
           </div>
         </div>
 
-        {/* Top fade gradient */}
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[var(--bg-primary)] to-transparent z-20 pointer-events-none" />
-        {/* Bottom fade gradient */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[var(--bg-primary)] to-transparent z-20 pointer-events-none" />
       </div>
     </section>
