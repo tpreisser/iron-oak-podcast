@@ -42,11 +42,7 @@ export function HeroSection() {
               Hard questions. Honest faith. No easy answers.
             </p>
 
-            <ButtonLink href="#subscribe" variant="primary" size="lg" sparkTrigger>
-              Listen Now
-            </ButtonLink>
-            {/* Email under the text, left-aligned */}
-            <div className="hero-email max-w-md mt-8 mx-auto lg:mx-0">
+            <div className="hero-email max-w-md mt-2 mx-auto lg:mx-0">
           <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
             <input
               type="email"

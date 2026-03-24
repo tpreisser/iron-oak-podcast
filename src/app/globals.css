@@ -49,15 +49,15 @@
   --accent-iron: #8A9BAE;
   --accent-iron-light: #B8C5D4;
 
-  /* Accent — Oak (golden brown, matched to logo) */
-  --accent-oak: #8B7535;
-  --accent-oak-light: #A8903F;
-  --accent-oak-glow: rgba(139, 117, 53, 0.15);
+  /* Accent — Oak (dark brown from brand) */
+  --accent-oak: #6B4226;
+  --accent-oak-light: #7E5232;
+  --accent-oak-glow: rgba(107, 66, 38, 0.15);
 
   /* Borders & Shadows */
   --border-default: #2A2E36;
   --border-hover: #3A3F4A;
-  --shadow-glow: 0 0 40px rgba(139, 117, 53, 0.12);
+  --shadow-glow: 0 0 40px rgba(107, 66, 38, 0.12);
 
   /* Typography Scale */
   --text-hero: clamp(3rem, 8vw, 7rem);
@@ -92,9 +92,9 @@
   --text-tertiary: #6B7280;
   --accent-iron: #5A6B7E;
   --accent-iron-light: #7A8B9E;
-  --accent-oak: #7A6630;
-  --accent-oak-light: #8B7535;
-  --accent-oak-glow: rgba(122, 102, 48, 0.12);
+  --accent-oak: #5A3820;
+  --accent-oak-light: #6B4226;
+  --accent-oak-glow: rgba(90, 56, 32, 0.12);
   --border-default: #E5E1DB;
   --border-hover: #D5D1CB;
   --shadow-glow: 0 0 40px rgba(181, 116, 46, 0.08);
