@@ -15,11 +15,11 @@ export function SponsorsSection() {
 
         <ScrollReveal delay={0.1} className="flex justify-center">
           <Image
-            src="/images/enertech-logo.png"
+            src="/images/enertech-logo.svg"
             alt="Enertech — Wichita, Kansas"
             width={500}
-            height={200}
-            className="w-[300px] md:w-[400px] lg:w-[500px] h-auto"
+            height={150}
+            className="w-[280px] md:w-[380px] lg:w-[450px] h-auto"
           />
         </ScrollReveal>
       </div>
