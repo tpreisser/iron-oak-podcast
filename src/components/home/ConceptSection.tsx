@@ -56,12 +56,12 @@ export function ConceptSection() {
       y: canvas.height + rand() * 20,
       vx: (rand() - 0.5) * 0.8,
       vy: -(0.3 + rand() * 1.2),
-      size: 0.5 + rand() * 1.8,
-      opacity: 0.3 + rand() * 0.5,
-      decay: 0.002 + rand() * 0.004,
+      size: 1 + rand() * 3,
+      opacity: 0.5 + rand() * 0.5,
+      decay: 0.001 + rand() * 0.003,
     });
 
-    embersRef.current = Array.from({ length: 40 }, () => {
+    embersRef.current = Array.from({ length: 80 }, () => {
       const e = spawnEmber();
       e.y = rand() * canvas.height;
       return e;
@@ -82,17 +82,17 @@ export function ConceptSection() {
 
         // Glow
         const g = ctx.createRadialGradient(ember.x, ember.y, 0, ember.x, ember.y, ember.size * 4);
-        g.addColorStop(0, `rgba(107, 66, 38, ${ember.opacity * 0.15})`);
-        g.addColorStop(1, 'rgba(107, 66, 38, 0)');
+        g.addColorStop(0, `rgba(180, 110, 40, ${ember.opacity * 0.25})`);
+        g.addColorStop(1, 'rgba(140, 80, 20, 0)');
         ctx.beginPath();
-        ctx.arc(ember.x, ember.y, ember.size * 4, 0, Math.PI * 2);
+        ctx.arc(ember.x, ember.y, ember.size * 5, 0, Math.PI * 2);
         ctx.fillStyle = g;
         ctx.fill();
 
-        // Core
+        // Core — brighter
         ctx.beginPath();
         ctx.arc(ember.x, ember.y, ember.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(180, 120, 60, ${ember.opacity * 0.7})`;
+        ctx.fillStyle = `rgba(220, 150, 60, ${ember.opacity * 0.85})`;
         ctx.fill();
       });
 
@@ -133,23 +133,9 @@ export function ConceptSection() {
         {/* Ember canvas background */}
         <canvas ref={canvasRef} className="absolute inset-0 z-0" />
 
-        {/* Perspective wrapper for Star Wars crawl effect */}
-        <div
-          className="absolute inset-0 z-10 flex items-end justify-center"
-          style={{
-            perspective: '400px',
-            perspectiveOrigin: '50% 100%',
-          }}
-        >
-          <div
-            style={{
-              transform: 'rotateX(25deg)',
-              transformOrigin: '50% 100%',
-              width: '100%',
-              maxWidth: '800px',
-              padding: '0 2rem',
-            }}
-          >
+        {/* Text crawl — flat, in your face */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <div className="w-full max-w-3xl px-8">
             {/* Crawl text container — moves upward based on scroll */}
             <div
               style={{
