@@ -33,48 +33,47 @@ function emberColor(life: number, maxLife: number): string {
 }
 
 export function ForgeIntro() {
-  const [visible, setVisible] = useState(false);
-  const [textVisible, setTextVisible] = useState(false);
+  // dismissed starts false — the overlay is in the SSR HTML as a solid black div.
+  // On client mount, we either instantly dismiss (already played) or start the animation.
+  const [dismissed, setDismissed] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
+  const [animating, setAnimating] = useState(false); // true once canvas/logo should run
+  const [logoVisible, setLogoVisible] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const embersRef = useRef<Ember[]>([]);
 
-  const revealPage = useCallback(() => {
-    // Mark intro as played for this session so the inline script
-    // won't add forge-pending on the next navigation/reload.
-    try { sessionStorage.setItem('forge-intro-played', '1'); } catch (_) {}
-    // Swap classes: remove the hidden state, add the transition.
-    document.body.classList.remove('forge-pending');
-    document.body.classList.add('forge-revealing');
-    // Clean up the revealing class after the transition finishes
-    // so it doesn't interfere with anything else.
-    setTimeout(() => document.body.classList.remove('forge-revealing'), 700);
-  }, []);
-
   const dismiss = useCallback(() => {
+    if (fadingOut) return; // prevent double-dismiss
     setFadingOut(true);
-    revealPage();
-    setTimeout(() => setVisible(false), 500);
-  }, [revealPage]);
+    try { sessionStorage.setItem('forge-intro-played', '1'); } catch (_) {}
+    setTimeout(() => setDismissed(true), 600);
+  }, [fadingOut]);
 
+  // On mount: decide whether to animate or skip
   useEffect(() => {
+    // If reduced motion preference, skip entirely
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // Intro won't play — immediately reveal the page content.
-      revealPage();
+      setDismissed(true);
       return;
     }
-    setVisible(true);
-    // Show logo immediately (small delay just for the fade-in feel)
-    const textTimer = setTimeout(() => setTextVisible(true), 300);
-    // No auto-dismiss — user clicks/taps/scrolls to continue
-    return () => {
-      clearTimeout(textTimer);
-    };
-  }, [dismiss, revealPage]);
+    // If already played this session, skip entirely
+    try {
+      if (sessionStorage.getItem('forge-intro-played')) {
+        setDismissed(true);
+        return;
+      }
+    } catch (_) {}
 
+    // Start animation
+    setAnimating(true);
+    const logoTimer = setTimeout(() => setLogoVisible(true), 300);
+    return () => clearTimeout(logoTimer);
+  }, []);
+
+  // Click/tap/scroll to dismiss (only when animating and not yet dismissed)
   useEffect(() => {
-    if (!visible) return;
+    if (!animating || dismissed) return;
     const handler = () => dismiss();
     window.addEventListener('click', handler);
     window.addEventListener('wheel', handler, { passive: true });
@@ -84,10 +83,11 @@ export function ForgeIntro() {
       window.removeEventListener('wheel', handler);
       window.removeEventListener('touchstart', handler);
     };
-  }, [visible, dismiss]);
+  }, [animating, dismissed, dismiss]);
 
+  // Canvas ember animation — only runs when animating is true
   useEffect(() => {
-    if (!visible) return;
+    if (!animating || dismissed) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -202,13 +202,10 @@ export function ForgeIntro() {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
     };
-  }, [visible]);
+  }, [animating, dismissed]);
 
-  useEffect(() => {
-    // Don't toggle overflow — html has overflow-y: scroll always to prevent jolt
-  }, [visible, fadingOut]);
-
-  if (!visible) return null;
+  // If fully dismissed, render nothing
+  if (dismissed) return null;
 
   return (
     <div
@@ -217,31 +214,34 @@ export function ForgeIntro() {
         fadingOut ? 'opacity-0' : 'opacity-100'
       )}
     >
-      <canvas ref={canvasRef} className="absolute inset-0" />
+      {/* Canvas only rendered on client once animation starts */}
+      {animating && <canvas ref={canvasRef} className="absolute inset-0" />}
 
       <div
         className={cn(
           'relative z-10 text-center transition-all duration-1000',
-          textVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          logoVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         )}
       >
         <Image
-            src={assetPath("/images/iron-oak-logo-new.webp")}
-            alt="The Iron & Oak Podcast"
-            width={500}
-            height={500}
-            className="w-[250px] md:w-[350px] lg:w-[420px] h-auto"
-            priority
-          />
+          src={assetPath("/images/iron-oak-logo-new.webp")}
+          alt="The Iron & Oak Podcast"
+          width={500}
+          height={500}
+          className="w-[250px] md:w-[350px] lg:w-[420px] h-auto"
+          priority
+        />
       </div>
 
       {/* bottom + safe area: accounts for iOS home indicator on notched devices */}
-      <p
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-white/30 tracking-wider"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        Tap anywhere to continue
-      </p>
+      {animating && (
+        <p
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-white/30 tracking-wider"
+          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          Tap anywhere to continue
+        </p>
+      )}
     </div>
   );
 }

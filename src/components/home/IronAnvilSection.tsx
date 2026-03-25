@@ -464,8 +464,8 @@ function drawHammer(
   // angle=0 means the handle hangs straight down; negative angles swing it back (clockwise = forward swing)
   // We only draw the LOWER portion of the arm (from partial-arm-start to head)
 
-  // Visible handle starts 55% of armLen from pivot (rest is off-screen or above frame)
-  const visibleStart = 0.50;  // fraction of armLen where visible portion begins
+  // Visible handle starts 30% of armLen from pivot (rest is off-screen or above frame)
+  const visibleStart = 0.30;  // fraction of armLen where visible portion begins
 
   // Compute the handle endpoint at full arm length
   const headCX = pivotX + Math.cos(angle) * armLen;
@@ -798,24 +798,27 @@ function drawScene(
   // The pivot is off-screen upper-right — simulating the blacksmith's shoulder/elbow.
   // We only see the forearm + hammer head.
   //
-  // Angle convention:
-  //   Math.PI/2     = pointing straight down (vertical)
-  //   Math.PI/2 + X = swung forward (clockwise past vertical)
-  //   Math.PI/2 - X = cocked back (counter-clockwise from vertical)
+  // ALL angles are DERIVED from the actual target positions so the hammer
+  // is GUARANTEED to land on the anvil face at impact.
   //
-  // At rest (cocked): angle = ~1.8 rad (roughly 100° from horizontal, cocked back)
-  // At strike:        angle = ~2.45 rad (roughly 140° from horizontal, swung through)
+  // Pivot: above and to the right of the anvil (blacksmith standing right, swinging down-left)
+  // armLen: computed from pivot → impact distance so it ALWAYS reaches exactly.
+  // angleImpact: atan2(impact - pivot) so the arc ALWAYS lands at impactX/impactY.
   // ============================================================
-  const pivotX = w * 1.05;          // pivot is off-screen right
-  const pivotY = h * 0.05;          // pivot is near top of canvas
-  const armLen = h * 0.82;          // arm length — long enough to reach anvil from pivot
+  const pivotX = anvilCX + w * 0.25;   // off-screen right of the anvil
+  const pivotY = h * -0.15;             // above the viewport
 
-  // Angle when cocked back (raised position)
-  const angleCocked = Math.PI * 1.05;   // ~190° — pointing down-left, cocked back
-  // Angle at impact (hammer has swung through to anvil face)
-  const angleImpact = Math.PI * 1.22;   // ~220° — swung forward, impacting face
-  // Angle at bounce/lift (after strike, hammer bounces up slightly)
-  const angleLift   = Math.PI * 1.10;   // ~198° — slightly back from impact
+  // Arm length derived from actual pivot-to-impact distance — guaranteed to reach
+  const dxImpact = impactX - pivotX;
+  const dyImpact = impactY - pivotY;
+  const armLen   = Math.sqrt(dxImpact * dxImpact + dyImpact * dyImpact);
+
+  // Impact angle: direction from pivot to impact point — guaranteed correct landing
+  const angleImpact = Math.atan2(dyImpact, dxImpact);
+  // Angle when cocked back (raised ~20° back from impact)
+  const angleCocked = angleImpact - 0.35;
+  // Angle at bounce/lift (bounced back slightly after strike)
+  const angleLift   = angleImpact - 0.18;
 
   // 0.35–0.45: FIRST STRIKE — hammer arcs down to anvil
   const strike1 = progress < 0.35 ? 0 : Math.min(1, (progress - 0.35) / 0.10);
@@ -829,8 +832,9 @@ function drawScene(
   // Compute current hammer swing angle
   let hammerAngle: number;
   if (hammerAppear < 1) {
-    // Swinging into view from above — starts very cocked, settles to cocked rest
-    const entryCocked = Math.PI * 0.90; // very raised entry angle
+    // Swinging into view from above — starts very raised, settles to cocked rest
+    // entryCocked is 0.55 rad further back than angleCocked (very high, off-screen entry)
+    const entryCocked = angleCocked - 0.55;
     const ease = 1 - Math.pow(1 - hammerAppear, 2);
     hammerAngle = entryCocked + (angleCocked - entryCocked) * ease;
   } else if (strike1 < 1) {

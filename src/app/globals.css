@@ -191,22 +191,6 @@ a, button, [role="button"] {
 }
 
 /* ------------------------------------------------------------
-   ForgeIntro — Flash-of-content prevention
-   body.forge-pending hides all page content until the intro
-   overlay completes. The inline script in layout.tsx adds this
-   class BEFORE first paint if the intro hasn't played this
-   session. ForgeIntro removes it when the animation finishes.
-   ------------------------------------------------------------ */
-body.forge-pending {
-  opacity: 0;
-}
-
-body.forge-revealing {
-  opacity: 1;
-  transition: opacity 0.6s ease;
-}
-
-/* ------------------------------------------------------------
    Accessibility — Reduced Motion
    ------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {

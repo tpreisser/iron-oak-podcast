@@ -79,16 +79,6 @@ export default function RootLayout({
       className={`${playfair.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-screen antialiased">
-        {/* Inline script runs synchronously before first paint.
-            If the ForgeIntro has NOT played this session, adds
-            'forge-pending' to body so content is hidden until
-            the animation signals completion. Skipped if the user
-            prefers reduced motion (intro won't play either). */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;if(!sessionStorage.getItem('forge-intro-played')){document.body.classList.add('forge-pending');}}catch(e){}})();`,
-          }}
-        />
         <ThemeProvider>
           <SmoothScrollProvider>
               <ScrollToTop />
