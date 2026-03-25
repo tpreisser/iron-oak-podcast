@@ -12,37 +12,6 @@ interface Spark {
 }
 
 // ============================================================
-// POSE TYPE — position-based keyframe for the hammer
-//
-// hx, hy  = world-space position of the hammer HEAD CENTER
-// rot     = rotation in degrees:
-//           0°  = handle points right (+X in local space)
-//           90° = handle points down
-//           180°= handle points left
-//           270°= handle points up
-//
-// The impact face of the hammer is at the -X (left) end of the head
-// in local space. After rotation, it points in the direction:
-//   world = rotate(-X, rotDeg) = (-cos(rotDeg°), -sin(rotDeg°))
-// So rot=270° means the impact face points straight DOWN onto the anvil.
-// ============================================================
-interface HammerPose {
-  hx: number;
-  hy: number;
-  rot: number;
-}
-
-// ============================================================
-// EASING HELPERS
-// ============================================================
-function easeIn3(t: number): number { return t * t * t; }
-function easeOut3(t: number): number { return 1 - Math.pow(1 - t, 3); }
-function lerp(a: number, b: number, t: number): number { return a + (b - a) * t; }
-function lerpPose(a: HammerPose, b: HammerPose, t: number): HammerPose {
-  return { hx: lerp(a.hx, b.hx, t), hy: lerp(a.hy, b.hy, t), rot: lerp(a.rot, b.rot, t) };
-}
-
-// ============================================================
 // ANVIL DRAWING — traced silhouette from reference
 //
 // cx/cy = center of the anvil body (cx = horizontal throat center,
@@ -128,37 +97,32 @@ function drawAnvil(
 }
 
 // ============================================================
-// HAMMER DRAWING — position-based pose system
+// HAMMER DRAWING — pivot-rotation approach
 //
-// Draws the hammer with its HEAD CENTER at (hx, hy) world-space.
-// rotDeg controls the handle direction:
-//   rot=0  : handle extends RIGHT, impact face faces LEFT
-//   rot=90 : handle extends DOWN,  impact face faces UP
-//   rot=270: handle extends UP,    impact face faces DOWN (striking pose)
-//   rot=315: handle extends upper-right, impact face faces lower-left (raised/cocked)
+// Called AFTER ctx.save(), ctx.translate(pivotX, pivotY),
+// ctx.rotate(currentAngle) have been applied by the caller.
 //
-// In local coords after translate(hx,hy)+rotate(rotDeg):
-//   Head block:    rect(-headW/2, -headH/2, headW, headH)  — centered at origin
-//   Impact face:   strip at the -X end of the head
-//   Handle:        extends in the +X direction from head right edge
+// In this local coordinate system:
+//   - (0, 0) is the pivot (hand grip)
+//   - +X points from the pivot toward the hammer head
+//   - The handle runs from (0, 0) to (handleLength, 0)
+//   - The head is centered at (handleLength, 0), perpendicular to handle
 // ============================================================
 function drawHammer(
   ctx: CanvasRenderingContext2D,
-  pose: HammerPose,
+  handleLength: number,
   alpha: number,
 ) {
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.translate(pose.hx, pose.hy);
-  ctx.rotate(pose.rot * Math.PI / 180);
 
-  const headW    = 58;   // head dimension along handle axis
-  const headH    = 82;   // head dimension perpendicular to handle
-  const handleW  = 15;
-  const handleLen = 280;
+  const handleW  = 14;   // handle thickness (perpendicular to handle axis)
+  const headLen  = 56;   // head extent along the handle axis
+  const headW    = 80;   // head extent perpendicular to the handle axis
 
-  // === WOODEN HANDLE (extends in +X direction from head right edge) ===
+  // === WOODEN HANDLE ===
+  // Runs from (0, -handleW/2) to (handleLength, handleW/2) along local X
   const handleGrad = ctx.createLinearGradient(0, -handleW / 2, 0, handleW / 2);
   handleGrad.addColorStop(0,    '#3A2214');
   handleGrad.addColorStop(0.20, '#5C4530');
@@ -168,33 +132,37 @@ function drawHammer(
   handleGrad.addColorStop(1,    '#2C1A0C');
 
   ctx.beginPath();
-  ctx.rect(headW / 2, -handleW / 2, handleLen, handleW);
+  ctx.rect(0, -handleW / 2, handleLength, handleW);
   ctx.fillStyle = handleGrad;
   ctx.fill();
 
   // Wood grain lines clipped to handle shape
   ctx.save();
   ctx.beginPath();
-  ctx.rect(headW / 2, -handleW / 2, handleLen, handleW);
+  ctx.rect(0, -handleW / 2, handleLength, handleW);
   ctx.clip();
   for (let g = 0; g < 5; g++) {
-    const t = (g + 0.5) / 5;
+    const t    = (g + 0.5) / 5;
     const lineY = -handleW / 2 + handleW * t;
     ctx.beginPath();
-    ctx.moveTo(headW / 2, lineY);
-    ctx.lineTo(headW / 2 + handleLen, lineY);
+    ctx.moveTo(0, lineY);
+    ctx.lineTo(handleLength, lineY);
     ctx.strokeStyle = g % 2 === 0 ? 'rgba(0,0,0,0.12)' : 'rgba(100,70,40,0.09)';
     ctx.lineWidth = 0.8;
     ctx.stroke();
   }
   ctx.restore();
 
-  // === IRON HAMMER HEAD (centered at local origin) ===
+  // === IRON HAMMER HEAD ===
+  // Centered at (handleLength, 0) in local space
+  // headLen along X (handle axis), headW along Y (perpendicular)
   ctx.save();
+  ctx.translate(handleLength, 0);
+
   ctx.shadowBlur  = 18;
   ctx.shadowColor = 'rgba(0,0,0,0.55)';
 
-  const headGrad = ctx.createLinearGradient(0, -headH / 2, 0, headH / 2);
+  const headGrad = ctx.createLinearGradient(0, -headW / 2, 0, headW / 2);
   headGrad.addColorStop(0,    '#1E1E24');
   headGrad.addColorStop(0.12, '#32323C');
   headGrad.addColorStop(0.40, '#4A4A56');
@@ -203,28 +171,34 @@ function drawHammer(
   headGrad.addColorStop(1,    '#1C1C22');
 
   ctx.beginPath();
-  ctx.rect(-headW / 2, -headH / 2, headW, headH);
+  ctx.rect(-headLen / 2, -headW / 2, headLen, headW);
   ctx.fillStyle = headGrad;
   ctx.fill();
   ctx.restore();
 
-  // Impact face strip — at the -X end (the striking face)
-  const faceGrad = ctx.createLinearGradient(0, -headH / 2, 0, headH / 2);
+  // Impact face strip — at the far end from pivot (+X side of head)
+  // The head extends from (handleLength - headLen/2) to (handleLength + headLen/2).
+  // The striking face is the +X end: at handleLength + headLen/2.
+  ctx.save();
+  ctx.translate(handleLength, 0);
+  const faceGrad = ctx.createLinearGradient(0, -headW / 2, 0, headW / 2);
   faceGrad.addColorStop(0,   '#282830');
   faceGrad.addColorStop(0.5, '#565664');
   faceGrad.addColorStop(1,   '#262830');
   ctx.beginPath();
-  ctx.rect(-headW / 2, -headH / 2, 6, headH);
+  ctx.rect(headLen / 2 - 6, -headW / 2, 6, headW);
   ctx.fillStyle = faceGrad;
   ctx.fill();
 
   // Top-edge highlight on head
   ctx.beginPath();
-  ctx.moveTo(-headW / 2, -headH / 2 + 2);
-  ctx.lineTo( headW / 2, -headH / 2 + 2);
+  ctx.moveTo(-headLen / 2, -headW / 2 + 2);
+  ctx.lineTo( headLen / 2, -headW / 2 + 2);
   ctx.strokeStyle = 'rgba(130,130,148,0.22)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
+
+  ctx.restore();
 
   ctx.restore();
 }
@@ -306,26 +280,19 @@ function drawSparks(
 }
 
 // ============================================================
-// MAIN SCENE — position-based keyframe animation driven by a
-// time-based progress value (0→1, looping). Scroll ONLY
-// controls visibility (fade in/out of the canvas wrapper).
+// MAIN SCENE — pivot-rotation hammer animation.
 //
-// Timing map (progress 0→1 over ~3 seconds):
-//   0.00–0.15: Anvil visible, hammer appears from upper-right into RAISED
-//   0.15–0.35: Strike 1: RAISED → IMPACT (ease-in)
-//   0.35–0.40: Impact 1 glow + sparks
-//   0.40–0.55: Bounce back: IMPACT → BOUNCE → RAISED
-//   0.55–0.75: Strike 2: RAISED → IMPACT (ease-in, harder)
-//   0.75–0.80: Impact 2 glow + sparks
-//   0.80–0.95: Lift: IMPACT → BOUNCE → RAISED
-//   0.95–1.00: Brief pause at RAISED before loop
+// stateRef.current.angle is the only value that changes.
+// Geometry is computed fresh each frame so it always fits
+// the current canvas size.
 // ============================================================
 function drawScene(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
-  progress: number,
+  angle: number,
   time: number,
   sparks: Spark[],
+  impactAngle: number,
 ) {
   ctx.clearRect(0, 0, w, h);
 
@@ -338,95 +305,20 @@ function drawScene(
   const impactX = anvilCX - 20;
   const impactY = anvilTopY - 2;
 
-  // ── Timing constants (time-based, not scroll-based) ───────────
-  const APPEAR_START = 0.00;
-  const S1_START     = 0.15;
-  const S1_HIT       = 0.35;
-  const S2_START     = 0.55;
-  const S2_HIT       = 0.75;
-  const L1_DUR       = 0.05;  // glow window after strike 1
-  const L2_DUR       = 0.05;  // glow window after strike 2
+  // Pivot: hand-grip, upper-right of canvas
+  const pivotX = w * 0.82;
+  const pivotY = anvilTopY - 250;
 
-  // ── Key poses ──────────────────────────────────────────────────
-  const RAISED: HammerPose = {
-    hx:  impactX + 110,
-    hy:  impactY - 195,
-    rot: 315,
-  };
+  // Handle length: exact distance from pivot to impact point
+  const dx = impactX - pivotX;
+  const dy = impactY - pivotY;
+  const handleLength = Math.sqrt(dx * dx + dy * dy);
 
-  const IMPACT: HammerPose = {
-    hx:  impactX,
-    hy:  impactY - 29,
-    rot: 270,
-  };
+  // ── Glow intensity — brightest when angle ≈ impactAngle ────────
+  const angleDiff      = Math.abs(angle - impactAngle);
+  const glowIntensity  = Math.max(0, 1 - angleDiff / 0.07);
 
-  const BOUNCE: HammerPose = {
-    hx:  impactX + 18,
-    hy:  impactY - 65,
-    rot: 285,
-  };
-
-  // ── Compute current pose ───────────────────────────────────────
-  // Anvil and hammer are always fully visible while this function runs.
-  // The canvas container opacity (controlled by ScrollTrigger) handles
-  // section-level fade in/out.
-  let pose: HammerPose;
-
-  if (progress < S1_START) {
-    // Appear: drift from slightly off-screen to RAISED position
-    const t = (progress - APPEAR_START) / Math.max(0.001, S1_START - APPEAR_START);
-    const OFFSCREEN: HammerPose = {
-      hx:  RAISED.hx + 80,
-      hy:  RAISED.hy - 60,
-      rot: RAISED.rot - 25,
-    };
-    pose = lerpPose(OFFSCREEN, RAISED, easeOut3(t));
-  } else if (progress < S1_HIT) {
-    // Strike 1: RAISED → IMPACT (ease-in, accelerating)
-    const t = (progress - S1_START) / Math.max(0.001, S1_HIT - S1_START);
-    pose = lerpPose(RAISED, IMPACT, easeIn3(t));
-  } else if (progress < S2_START) {
-    // Between strikes: IMPACT → BOUNCE → RAISED
-    const segDur = S2_START - S1_HIT;
-    const t      = (progress - S1_HIT) / Math.max(0.001, segDur);
-    if (t < 0.35) {
-      pose = lerpPose(IMPACT, BOUNCE, easeOut3(t / 0.35));
-    } else {
-      pose = lerpPose(BOUNCE, RAISED, easeOut3((t - 0.35) / 0.65));
-    }
-  } else if (progress < S2_HIT) {
-    // Strike 2: RAISED → IMPACT (ease-in, slightly harder)
-    const t = (progress - S2_START) / Math.max(0.001, S2_HIT - S2_START);
-    pose = lerpPose(RAISED, IMPACT, easeIn3(t));
-  } else if (progress < 0.95) {
-    // After strike 2: IMPACT → BOUNCE → RAISED
-    const segDur = 0.95 - S2_HIT;
-    const t      = (progress - S2_HIT) / Math.max(0.001, segDur);
-    if (t < 0.25) {
-      pose = lerpPose(IMPACT, BOUNCE, easeOut3(t / 0.25));
-    } else {
-      pose = lerpPose(BOUNCE, RAISED, easeOut3((t - 0.25) / 0.75));
-    }
-  } else {
-    // Brief pause at RAISED before loop restarts (0.95–1.00)
-    pose = RAISED;
-  }
-
-  // ── Strike glow intensity ──────────────────────────────────────
-  let glowIntensity = 0;
-
-  if (progress >= S1_HIT && progress < S1_HIT + L1_DUR) {
-    const t = (progress - S1_HIT) / L1_DUR;
-    glowIntensity = Math.max(0, 1 - t * 2.2);
-  }
-  if (progress >= S2_HIT && progress < S2_HIT + L2_DUR) {
-    const t  = (progress - S2_HIT) / L2_DUR;
-    const g2 = Math.max(0, 1 - t * 2.0) * 1.25;
-    glowIntensity = Math.max(glowIntensity, g2);
-  }
-  glowIntensity = Math.min(1, glowIntensity);
-
-  // ── Ambient screen glow during strikes ────────────────────────
+  // ── Ambient screen glow during strike ─────────────────────────
   if (glowIntensity > 0) {
     const ambR    = w * 0.40 * glowIntensity;
     const ambient = ctx.createRadialGradient(impactX, impactY, 0, impactX, impactY, ambR);
@@ -443,20 +335,17 @@ function drawScene(
   // ── Draw: strike glow on anvil face ───────────────────────────
   drawStrikeGlow(ctx, impactX, impactY + 4, glowIntensity);
 
-  // ── Spawn sparks at strike moments ────────────────────────────
-  const isStriking1 = progress > S1_HIT && progress < S1_HIT + L1_DUR * 0.8;
-  const isStriking2 = progress > S2_HIT && progress < S2_HIT + L2_DUR * 0.8;
-
-  if ((isStriking1 || isStriking2) && time % 2 === 0) {
-    const burstCount = isStriking2 ? 9 : 6;
+  // ── Spawn sparks at strike moment ─────────────────────────────
+  if (angleDiff < 0.05 && time % 2 === 0) {
+    const burstCount = 7;
     for (let i = 0; i < burstCount; i++) {
-      const angle = (Math.random() * Math.PI * 1.6) - Math.PI * 1.3;
+      const a     = (Math.random() * Math.PI * 1.6) - Math.PI * 1.3;
       const speed = 3.0 + Math.random() * 6.0;
       sparks.push({
         x:          impactX + (Math.random() - 0.5) * 14,
         y:          impactY - 2,
-        vx:         Math.cos(angle) * speed,
-        vy:         Math.sin(angle) * speed - 3.0,
+        vx:         Math.cos(a) * speed,
+        vy:         Math.sin(a) * speed - 3.0,
         life:       0.6 + Math.random() * 0.5,
         size:       1.4 + Math.random() * 3.0,
         brightness: 0.55 + Math.random() * 0.45,
@@ -479,8 +368,15 @@ function drawScene(
   // ── Draw: sparks (after anvil, before hammer) ─────────────────
   drawSparks(ctx, sparks);
 
-  // ── Draw: hammer (topmost layer) ──────────────────────────────
-  drawHammer(ctx, pose, 1);
+  // ── Draw: hammer using pivot rotation ─────────────────────────
+  // Translate to pivot, rotate by current angle, then draw in local space.
+  // At impactAngle, the head end (at local X = handleLength) sits exactly
+  // at world position (impactX, impactY).
+  ctx.save();
+  ctx.translate(pivotX, pivotY);
+  ctx.rotate(angle);
+  drawHammer(ctx, handleLength, 1);
+  ctx.restore();
 }
 
 // ============================================================
@@ -490,7 +386,8 @@ export function IronAnvilSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const textRef    = useRef<HTMLDivElement>(null);
-  const stateRef   = useRef({ progress: 0, time: 0, sparks: [] as Spark[] });
+  // angle: current rotation; impactAngle: pre-computed each resize
+  const stateRef   = useRef({ angle: 0, impactAngle: 0, time: 0, sparks: [] as Spark[] });
   const rafRef     = useRef(0);
 
   useEffect(() => {
@@ -498,6 +395,22 @@ export function IronAnvilSection() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const computeImpactAngle = (cw: number, ch: number) => {
+      const anvilTopY  = ch * 0.50;
+      const anvilCX    = cw * 0.62;
+      const impactX    = anvilCX - 20;
+      const impactY    = anvilTopY - 2;
+      const pivotX     = cw * 0.82;
+      const pivotY     = anvilTopY - 250;
+      const ia         = Math.atan2(impactY - pivotY, impactX - pivotX);
+      stateRef.current.impactAngle = ia;
+      // Initialise angle to raised position if it hasn't been set yet
+      // (only on first resize — after that GSAP owns the value)
+      if (stateRef.current.angle === 0) {
+        stateRef.current.angle = ia - 0.6;
+      }
+    };
 
     const resize = () => {
       const dpr    = Math.min(window.devicePixelRatio, 2);
@@ -509,6 +422,7 @@ export function IronAnvilSection() {
       canvas.style.width  = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      computeImpactAngle(rect.width, rect.height);
     };
     resize();
     window.addEventListener('resize', resize);
@@ -518,7 +432,7 @@ export function IronAnvilSection() {
       const cw = canvas.width  / Math.min(window.devicePixelRatio, 2);
       const ch = canvas.height / Math.min(window.devicePixelRatio, 2);
       s.time += 1;
-      drawScene(ctx, cw, ch, s.progress, s.time, s.sparks);
+      drawScene(ctx, cw, ch, s.angle, s.time, s.sparks, s.impactAngle);
       rafRef.current = requestAnimationFrame(render);
     };
     rafRef.current = requestAnimationFrame(render);
@@ -532,29 +446,59 @@ export function IronAnvilSection() {
   useGSAP((gsap, ScrollTrigger) => {
     if (!sectionRef.current || !textRef.current) return;
 
-    // ── Time-based hammer animation (completely independent of scroll) ──
-    // Tweens progress 0→1 over 3 seconds on a repeating loop.
-    // The canvas render loop reads stateRef.current.progress each frame.
-    const anim = { progress: 0 };
-    const animTl = gsap.timeline({ repeat: -1, repeatDelay: 0.3, paused: true });
-    animTl.to(anim, {
-      progress: 1,
-      duration: 3,
-      ease:     'none',
-      onUpdate: () => { stateRef.current.progress = anim.progress; },
+    // ── Hammer animation: tween a single angle value ───────────────
+    // impactAngle is computed in useEffect on mount. We read it once
+    // here. Because useGSAP runs after mount, impactAngle is ready.
+    //
+    // We re-read impactAngle from stateRef on each timeline update so
+    // the animation stays correct after a resize (impactAngle updates
+    // in place). We tween a plain object and forward to stateRef.
+    const anim = { angle: stateRef.current.impactAngle - 0.6 };
+
+    const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.5, paused: true });
+
+    // Swing down to impact
+    tl.to(anim, {
+      get angle() { return stateRef.current.impactAngle; },
+      duration: 0.4,
+      ease: 'power2.in',
+      onUpdate: () => { stateRef.current.angle = anim.angle; },
     });
 
-    // ── ScrollTrigger: pins section, only controls visibility ──────────
-    // Does NOT scrub or drive animation progress.
+    // Bounce back up slightly
+    tl.to(anim, {
+      get angle() { return stateRef.current.impactAngle - 0.15; },
+      duration: 0.25,
+      ease: 'power2.out',
+      onUpdate: () => { stateRef.current.angle = anim.angle; },
+    });
+
+    // Strike again
+    tl.to(anim, {
+      get angle() { return stateRef.current.impactAngle; },
+      duration: 0.35,
+      ease: 'power2.in',
+      onUpdate: () => { stateRef.current.angle = anim.angle; },
+    });
+
+    // Raise back up
+    tl.to(anim, {
+      get angle() { return stateRef.current.impactAngle - 0.6; },
+      duration: 0.5,
+      ease: 'power2.out',
+      onUpdate: () => { stateRef.current.angle = anim.angle; },
+    });
+
+    // ── ScrollTrigger: pin section, play/pause animation ───────────
     ScrollTrigger.create({
-      trigger:    sectionRef.current,
-      start:      'top top',
-      end:        '+=180%',
-      pin:        true,
-      onEnter:     () => { animTl.play(); },
-      onLeave:     () => { animTl.pause(); },
-      onEnterBack: () => { animTl.play(); },
-      onLeaveBack: () => { animTl.pause(); },
+      trigger:     sectionRef.current,
+      start:       'top top',
+      end:         '+=180%',
+      pin:         true,
+      onEnter:     () => tl.play(),
+      onLeave:     () => tl.pause(),
+      onEnterBack: () => tl.play(),
+      onLeaveBack: () => tl.pause(),
     });
 
     // ── Text animation: scroll-triggered fade-in (separate ScrollTrigger) ─
