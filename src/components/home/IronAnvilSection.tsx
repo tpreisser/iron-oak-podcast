@@ -12,21 +12,46 @@ interface Spark {
 }
 
 // ============================================================
-// ANVIL DRAWING — anatomically correct London pattern anvil
+// POSE TYPE — position-based keyframe for the hammer
 //
-// Coordinate system: cx/cy = center-x of anvil body, cy = top of face plate
+// hx, hy  = world-space position of the hammer HEAD CENTER
+// rot     = rotation in degrees:
+//           0°  = handle points right (+X in local space)
+//           90° = handle points down
+//           180°= handle points left
+//           270°= handle points up
 //
-// Key anatomy (all values relative to scale=1):
-//   Horn   — long conical taper pointing LEFT, same length as face, rounds to blunt tip
-//   Face   — hardened flat steel top surface, widest part, slightly raised plate
-//   Heel   — square rear extension RIGHT of face, has hardy hole + pritchel hole
-//   Throat — dramatically waisted/narrowed body below face (most iconic feature)
-//   Base   — two broad feet flanges with recessed arch; significantly wider than throat
+// The impact face of the hammer is at the -X (left) end of the head
+// in local space. After rotation, it points in the direction:
+//   world = rotate(-X, rotDeg) = (-cos(rotDeg°), -sin(rotDeg°))
+// So rot=270° means the impact face points straight DOWN onto the anvil.
+// ============================================================
+interface HammerPose {
+  hx: number;
+  hy: number;
+  rot: number;
+}
+
+// ============================================================
+// EASING HELPERS
+// ============================================================
+function easeIn3(t: number): number { return t * t * t; }
+function easeOut3(t: number): number { return 1 - Math.pow(1 - t, 3); }
+function lerp(a: number, b: number, t: number): number { return a + (b - a) * t; }
+function lerpPose(a: HammerPose, b: HammerPose, t: number): HammerPose {
+  return { hx: lerp(a.hx, b.hx, t), hy: lerp(a.hy, b.hy, t), rot: lerp(a.rot, b.rot, t) };
+}
+
+// ============================================================
+// ANVIL DRAWING — traced silhouette from reference
+//
+// cx/cy = center of the anvil body (cx = horizontal throat center,
+//         cy = top of the working face).
 // ============================================================
 function drawAnvil(
   ctx: CanvasRenderingContext2D,
-  cx: number,   // horizontal center of the anvil body
-  cy: number,   // y-coordinate of the TOP of the face plate
+  cx: number,
+  cy: number,
   scale: number,
   alpha: number,
 ) {
@@ -36,630 +61,170 @@ function drawAnvil(
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
 
-  // ---- Core dimension constants ----
-  // These are tuned so the anvil reads correctly at canvas scale.
-  // Adjust scale argument at call site to resize; keep ratios here intact.
-  const faceW       = 190;  // width of the flat top working face
-  const faceH       = 18;   // thickness of the face plate (the hardened steel slab)
-  const hornLen     = 170;  // how far the horn extends left of face left edge
-  const hornBaseH   = 18;   // horn height at its root (matches faceH)
-  const hornTipH    = 6;    // horn height at tip (blunt point)
-  const heelW       = 42;   // heel extends this far right of face right edge
+  // Drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(-30, 125, 110, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Hardy hole (square) and pritchel hole (round) sit on the heel
-  const hardySize   = 14;   // side length of the square hardy hole
-  const pritchRad   = 5;    // radius of the round pritchel hole
+  // Main silhouette path (traced from reference image)
+  ctx.beginPath();
+  ctx.moveTo(-180, 12);
+  ctx.bezierCurveTo(-120, -4, -30, -6, 75, -2);
+  ctx.bezierCurveTo(82, -1, 85, 8, 78, 22);
+  ctx.bezierCurveTo(65, 42, 48, 55, 38, 72);
+  ctx.bezierCurveTo(42, 78, 55, 82, 95, 85);
+  ctx.lineTo(95, 115);
+  ctx.bezierCurveTo(70, 115, 30, 80, 0, 78);
+  ctx.bezierCurveTo(-30, 80, -70, 115, -95, 115);
+  ctx.lineTo(-95, 85);
+  ctx.bezierCurveTo(-55, 82, -42, 78, -38, 72);
+  ctx.bezierCurveTo(-48, 55, -65, 42, -68, 22);
+  ctx.bezierCurveTo(-72, 28, -130, 30, -180, 12);
+  ctx.closePath();
 
-  // Throat / waist — the narrow section below the face plate
-  // Top of throat is just below face plate; bottom expands to base
-  const throatTopHW = 68;   // half-width at top of throat (right below face)
-  const throatMidHW = 42;   // half-width at narrowest waist point
-  const throatH     = 70;   // height of the throat section
+  const bodyGrad = ctx.createLinearGradient(-180, 0, 85, 0);
+  bodyGrad.addColorStop(0,    '#161618');
+  bodyGrad.addColorStop(0.35, '#454558');
+  bodyGrad.addColorStop(0.55, '#585868');
+  bodyGrad.addColorStop(0.90, '#2A2A38');
+  bodyGrad.addColorStop(1,    '#1A1A22');
+  ctx.fillStyle = bodyGrad;
+  ctx.fill();
 
-  // Base — broad feet at the bottom
-  const baseHW      = 130;  // half-width of the base block
-  const baseFeetHW  = 160;  // half-width at the outermost feet flanges
-  const baseH       = 48;   // total height of the base block
-  const feetH       = 14;   // height of the flange overhang on each foot
-  const archW       = 100;  // width of the arch cutout between feet (each side)
+  // Face highlight strip along the flat working surface
+  ctx.beginPath();
+  ctx.moveTo(-180, 12);
+  ctx.bezierCurveTo(-120, -4, -30, -6, 75, -2);
+  ctx.lineTo(75, 5);
+  ctx.bezierCurveTo(-30, 2, -120, 4, -180, 12);
+  ctx.closePath();
+  const faceHighlight = ctx.createLinearGradient(-180, 0, 75, 0);
+  faceHighlight.addColorStop(0,   'rgba(70,70,88,0)');
+  faceHighlight.addColorStop(0.5, 'rgba(115,115,138,0.7)');
+  faceHighlight.addColorStop(1,   'rgba(85,85,100,0.35)');
+  ctx.fillStyle = faceHighlight;
+  ctx.fill();
 
-  // ---- Vertical reference lines (measured downward from cy=0 = top of face) ----
-  const faceTop     = 0;
-  const faceBot     = faceH;           // bottom of face plate = top of throat
-  const throatBot   = faceBot + throatH; // bottom of throat = top of base
-  const baseBot     = throatBot + baseH; // ground level
+  // Specular top edge line
+  ctx.beginPath();
+  ctx.moveTo(-170, 10);
+  ctx.bezierCurveTo(-115, -5, -25, -7, 74, -3);
+  ctx.strokeStyle = 'rgba(220,220,240,0.5)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
 
-  // ============================================================
-  // SHADOW beneath anvil (ground shadow ellipse)
-  // ============================================================
-  {
-    const shadowG = ctx.createRadialGradient(0, baseBot + 8, 8, 0, baseBot + 8, baseFeetHW + 20);
-    shadowG.addColorStop(0, 'rgba(0,0,0,0.50)');
-    shadowG.addColorStop(0.4, 'rgba(0,0,0,0.20)');
-    shadowG.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = shadowG;
-    ctx.beginPath();
-    ctx.ellipse(0, baseBot + 10, baseFeetHW + 20, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  // Hardy hole (square) on the heel
+  ctx.fillStyle = 'rgba(0,0,0,0.8)';
+  ctx.fillRect(46, 3, 10, 10);
 
-  // ============================================================
-  // BASE — Two feet with a recessed arch between them
-  //
-  // Profile (viewed from front):
-  //   Left foot block | arch gap | Right foot block
-  //   The arch is a curved cutout that lifts the center off the ground
-  // ============================================================
-  {
-    // Main base rectangle (full width, bottom portion)
-    const baseGradH = ctx.createLinearGradient(-baseHW, 0, baseHW, 0);
-    baseGradH.addColorStop(0,    '#1C1C20');
-    baseGradH.addColorStop(0.08, '#2E2E34');
-    baseGradH.addColorStop(0.25, '#3C3C44');
-    baseGradH.addColorStop(0.50, '#484852');
-    baseGradH.addColorStop(0.75, '#3A3A42');
-    baseGradH.addColorStop(0.92, '#2A2A30');
-    baseGradH.addColorStop(1,    '#1A1A1E');
-
-    // Draw base as a path with feet flanges on each side
-    ctx.beginPath();
-    // Start at bottom-left of left foot
-    ctx.moveTo(-baseFeetHW, baseBot);
-    ctx.lineTo(-baseFeetHW, throatBot + (baseH - feetH));        // left foot outer side
-    ctx.lineTo(-baseHW,     throatBot + (baseH - feetH));        // left foot inner step
-    ctx.lineTo(-baseHW,     throatBot);                          // left side of main base top
-    ctx.lineTo( baseHW,     throatBot);                          // right side of main base top
-    ctx.lineTo( baseHW,     throatBot + (baseH - feetH));        // right foot inner step
-    ctx.lineTo( baseFeetHW, throatBot + (baseH - feetH));        // right foot outer side
-    ctx.lineTo( baseFeetHW, baseBot);                            // bottom-right of right foot
-    ctx.closePath();
-    ctx.fillStyle = baseGradH;
-    ctx.fill();
-
-    // Arch cutout between the two feet (the gap under the base)
-    // This creates the classic anvil base silhouette
-    ctx.save();
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    const archLeft  = -archW;
-    const archRight =  archW;
-    const archTop   = throatBot + (baseH - feetH) + 2; // just below the step
-    const archDepth = feetH - 4;                        // how deep the arch goes
-    ctx.moveTo(archLeft,  baseBot);
-    ctx.lineTo(archLeft,  archTop + archDepth * 0.3);
-    ctx.bezierCurveTo(
-      archLeft,  archTop,
-      -archW * 0.5, archTop - archDepth * 0.5,
-      0, archTop - archDepth * 0.6,
-    );
-    ctx.bezierCurveTo(
-      archW * 0.5, archTop - archDepth * 0.5,
-      archRight, archTop,
-      archRight, archTop + archDepth * 0.3,
-    );
-    ctx.lineTo(archRight, baseBot);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    // Top edge highlight of base
-    ctx.beginPath();
-    ctx.moveTo(-baseHW, throatBot);
-    ctx.lineTo( baseHW, throatBot);
-    ctx.strokeStyle = 'rgba(90,90,100,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Feet top edge highlight
-    ctx.beginPath();
-    ctx.moveTo(-baseFeetHW, throatBot + (baseH - feetH));
-    ctx.lineTo(-baseHW,     throatBot + (baseH - feetH));
-    ctx.moveTo( baseHW,     throatBot + (baseH - feetH));
-    ctx.lineTo( baseFeetHW, throatBot + (baseH - feetH));
-    ctx.strokeStyle = 'rgba(70,70,80,0.4)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-
-  // ============================================================
-  // THROAT / WAIST — the dramatic hourglass narrowing below face
-  //
-  // Left side: bezier curve that sweeps INWARD then back out
-  // Right side: mirror of left
-  //
-  // This is the most visually distinctive part of a London-pattern anvil.
-  // The curves are pronounced — not gentle. The waist is very narrow.
-  // ============================================================
-  {
-    const throatGrad = ctx.createLinearGradient(-throatTopHW - 20, 0, throatTopHW + 20, 0);
-    throatGrad.addColorStop(0,    '#181820');
-    throatGrad.addColorStop(0.12, '#28282E');
-    throatGrad.addColorStop(0.30, '#363640');
-    throatGrad.addColorStop(0.50, '#42424C');
-    throatGrad.addColorStop(0.70, '#363640');
-    throatGrad.addColorStop(0.88, '#26262C');
-    throatGrad.addColorStop(1,    '#161618');
-
-    ctx.beginPath();
-    // Top-left of throat (just below left edge of face plate)
-    ctx.moveTo(-throatTopHW, faceBot);
-
-    // LEFT side curve: sweeps dramatically inward to the waist, then back out to base
-    // Control point 1: pull sharply inward near the top
-    // Control point 2: flare out gently near the base
-    ctx.bezierCurveTo(
-      -throatTopHW,          faceBot + throatH * 0.25,  // CP1: stay wide briefly
-      -throatMidHW,          faceBot + throatH * 0.55,  // CP2: pulled hard inward at mid
-      -baseHW,               throatBot,                 // arrives at base width
-    );
-
-    // Bottom of throat (base top edge)
-    ctx.lineTo(baseHW, throatBot);
-
-    // RIGHT side curve: mirror of left
-    ctx.bezierCurveTo(
-      throatMidHW,           faceBot + throatH * 0.55,
-      throatTopHW,           faceBot + throatH * 0.25,
-      throatTopHW,           faceBot,
-    );
-
-    ctx.closePath();
-    ctx.fillStyle = throatGrad;
-    ctx.fill();
-
-    // LEFT side edge (thin highlight on the curve)
-    ctx.beginPath();
-    ctx.moveTo(-throatTopHW, faceBot);
-    ctx.bezierCurveTo(
-      -throatTopHW,  faceBot + throatH * 0.25,
-      -throatMidHW,  faceBot + throatH * 0.55,
-      -baseHW,       throatBot,
-    );
-    ctx.strokeStyle = 'rgba(55,55,65,0.7)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // RIGHT side edge
-    ctx.beginPath();
-    ctx.moveTo(throatTopHW, faceBot);
-    ctx.bezierCurveTo(
-      throatMidHW,  faceBot + throatH * 0.25,
-      throatTopHW,  faceBot + throatH * 0.55,
-      baseHW,       throatBot,
-    );
-    ctx.stroke();
-  }
-
-  // ============================================================
-  // HORN — conical taper extending LEFT
-  //
-  // Real horn anatomy:
-  //   - Circular cross-section (round rod that tapers to a point)
-  //   - Slopes very slightly downward from root to tip
-  //   - Root attaches at left edge of face plate
-  //   - Top edge is a gentle downward curve
-  //   - Bottom edge curves down more steeply (the underside tapers)
-  //   - Tip is blunt (not razor-sharp in practice)
-  // ============================================================
-  {
-    const hornGrad = ctx.createLinearGradient(-faceW / 2 - hornLen, 0, -faceW / 2, 0);
-    hornGrad.addColorStop(0,   '#1E1E22');
-    hornGrad.addColorStop(0.3, '#2E2E34');
-    hornGrad.addColorStop(0.7, '#3C3C44');
-    hornGrad.addColorStop(1,   '#484850');
-
-    // The horn root starts at the left edge of the face plate
-    const hornRootX = -faceW / 2;
-    const hornTipX  = hornRootX - hornLen;
-
-    // Root top/bottom Y (at face plate)
-    const hornRootTopY    = faceTop;                       // flush with face top
-    const hornRootBotY    = faceTop + hornBaseH;           // flush with face bottom
-
-    // Tip Y — the horn droops slightly downward toward the tip
-    const hornTipTopY     = faceTop + (hornBaseH - hornTipH) * 0.6 + hornBaseH * 0.18;
-    const hornTipBotY     = hornTipTopY + hornTipH;
-
-    ctx.beginPath();
-    // Start at horn root top (where it meets the face plate left edge, top)
-    ctx.moveTo(hornRootX, hornRootTopY);
-
-    // Top edge of horn — gentle downward curve to tip
-    ctx.bezierCurveTo(
-      hornRootX - hornLen * 0.40, hornRootTopY + (hornTipTopY - hornRootTopY) * 0.2,
-      hornRootX - hornLen * 0.75, hornTipTopY - 4,
-      hornTipX, hornTipTopY,
-    );
-
-    // Rounded tip (small arc connecting top to bottom of tip)
-    ctx.quadraticCurveTo(
-      hornTipX - hornTipH * 0.8,
-      (hornTipTopY + hornTipBotY) / 2,
-      hornTipX, hornTipBotY,
-    );
-
-    // Bottom edge of horn — curves back steeply to root
-    // The underside tapers more aggressively (horn is rounder on top)
-    ctx.bezierCurveTo(
-      hornRootX - hornLen * 0.70, hornTipBotY + 5,
-      hornRootX - hornLen * 0.30, hornRootBotY - 2,
-      hornRootX, hornRootBotY,
-    );
-
-    ctx.closePath();
-    ctx.fillStyle = hornGrad;
-    ctx.fill();
-
-    // Top highlight edge of horn
-    ctx.beginPath();
-    ctx.moveTo(hornRootX, hornRootTopY);
-    ctx.bezierCurveTo(
-      hornRootX - hornLen * 0.40, hornRootTopY + (hornTipTopY - hornRootTopY) * 0.2,
-      hornRootX - hornLen * 0.75, hornTipTopY - 4,
-      hornTipX, hornTipTopY,
-    );
-    ctx.strokeStyle = 'rgba(100,100,115,0.25)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Subtle center-line groove along the top of the horn (visual roundness cue)
-    ctx.beginPath();
-    ctx.moveTo(hornRootX - 10, hornRootTopY + 3);
-    ctx.bezierCurveTo(
-      hornRootX - hornLen * 0.35, hornRootTopY + 5,
-      hornRootX - hornLen * 0.70, hornTipTopY + 2,
-      hornTipX + 8, hornTipTopY + 2,
-    );
-    ctx.strokeStyle = 'rgba(0,0,0,0.30)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-  }
-
-  // ============================================================
-  // FACE PLATE — the flat hardened-steel working surface
-  //
-  // This is the most-used part of the anvil; it's a harder grade of
-  // steel than the body, so it's slightly lighter/shinier.
-  // Edges have a visible chamfer/radius.
-  // ============================================================
-  {
-    // Face plate spans the full width of the top — from heel right edge to
-    // where the horn begins (but the working face is just the flat center section)
-    const faceLeft  = -faceW / 2;
-    const faceRight =  faceW / 2;
-
-    // Gradient: brighter in center (worn/polished), darker at edges
-    const faceGrad = ctx.createLinearGradient(faceLeft, faceTop, faceRight, faceTop);
-    faceGrad.addColorStop(0,    '#2C2C34');
-    faceGrad.addColorStop(0.10, '#424248');
-    faceGrad.addColorStop(0.30, '#585864');
-    faceGrad.addColorStop(0.50, '#636370');  // brightest at center
-    faceGrad.addColorStop(0.70, '#585864');
-    faceGrad.addColorStop(0.90, '#404048');
-    faceGrad.addColorStop(1,    '#2A2A32');
-
-    // Face plate with slightly rounded corners using arc
-    const radius = 4; // subtle chamfer
-    ctx.beginPath();
-    ctx.moveTo(faceLeft + radius, faceTop);
-    ctx.lineTo(faceRight - radius, faceTop);
-    ctx.arcTo(faceRight, faceTop, faceRight, faceTop + radius, radius);
-    ctx.lineTo(faceRight, faceBot - radius);
-    ctx.arcTo(faceRight, faceBot, faceRight - radius, faceBot, radius);
-    ctx.lineTo(faceLeft + radius, faceBot);
-    ctx.arcTo(faceLeft, faceBot, faceLeft, faceBot - radius, radius);
-    ctx.lineTo(faceLeft, faceTop + radius);
-    ctx.arcTo(faceLeft, faceTop, faceLeft + radius, faceTop, radius);
-    ctx.closePath();
-    ctx.fillStyle = faceGrad;
-    ctx.fill();
-
-    // Polished top surface specular highlight (slightly off-center, mimics overhead light)
-    ctx.beginPath();
-    ctx.moveTo(faceLeft + 12, faceTop + 3);
-    ctx.lineTo(faceRight - 12, faceTop + 3);
-    ctx.strokeStyle = 'rgba(160,160,175,0.18)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Bottom edge shadow line
-    ctx.beginPath();
-    ctx.moveTo(faceLeft, faceBot);
-    ctx.lineTo(faceRight, faceBot);
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  // ============================================================
-  // HEEL — square rear protrusion to the RIGHT of the face plate
-  //
-  // The heel is slightly below the face plane (it's a separate section).
-  // It holds the hardy hole (square) and pritchel hole (round).
-  // ============================================================
-  {
-    const heelLeft  = faceW / 2;
-    const heelRight = faceW / 2 + heelW;
-
-    // Heel is same height as face but slightly darker (less polished)
-    const heelGrad = ctx.createLinearGradient(heelLeft, 0, heelRight, 0);
-    heelGrad.addColorStop(0,   '#484852');
-    heelGrad.addColorStop(0.4, '#404048');
-    heelGrad.addColorStop(1,   '#282830');
-
-    const hRadius = 3;
-    ctx.beginPath();
-    ctx.moveTo(heelLeft, faceTop);           // top-left of heel (joins face plate)
-    ctx.lineTo(heelRight - hRadius, faceTop);
-    ctx.arcTo(heelRight, faceTop, heelRight, faceTop + hRadius, hRadius);
-    ctx.lineTo(heelRight, faceBot - hRadius);
-    ctx.arcTo(heelRight, faceBot, heelRight - hRadius, faceBot, hRadius);
-    ctx.lineTo(heelLeft, faceBot);
-    ctx.closePath();
-    ctx.fillStyle = heelGrad;
-    ctx.fill();
-
-    // Heel top edge
-    ctx.beginPath();
-    ctx.moveTo(heelLeft, faceTop);
-    ctx.lineTo(heelRight - hRadius, faceTop);
-    ctx.strokeStyle = 'rgba(100,100,115,0.20)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // --- Hardy hole (square cutout, ~⅔ from heel left edge) ---
-    // In reality these are through-holes; we render them as dark insets
-    const hardyX = heelLeft + (heelW - hardySize) * 0.38;
-    const hardyY = faceTop + (faceH - hardySize) / 2;
-    ctx.fillStyle = 'rgba(0,0,0,0.75)';
-    ctx.fillRect(hardyX, hardyY, hardySize, hardySize);
-    // Hardy hole inner highlight (slight depth illusion)
-    ctx.strokeStyle = 'rgba(30,30,35,1)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(hardyX + 1, hardyY + 1, hardySize - 2, hardySize - 2);
-
-    // --- Pritchel hole (round, near heel tip) ---
-    const pritchX = heelLeft + heelW * 0.78;
-    const pritchY = faceTop + faceH / 2;
-    ctx.beginPath();
-    ctx.arc(pritchX, pritchY, pritchRad, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.72)';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(pritchX, pritchY, pritchRad - 1, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(25,25,30,0.9)';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-  }
+  // Pritchel hole (round) on the heel
+  ctx.beginPath();
+  ctx.arc(64, 8, 4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fill();
 
   ctx.restore();
 }
 
 // ============================================================
-// HAMMER DRAWING — cross-peen blacksmith hammer
+// HAMMER DRAWING — position-based pose system
 //
-// The hammer swings in an ARC from a pivot point off-screen upper-right.
-// Only the forearm/lower handle + head is visible.
+// Draws the hammer with its HEAD CENTER at (hx, hy) world-space.
+// rotDeg controls the handle direction:
+//   rot=0  : handle extends RIGHT, impact face faces LEFT
+//   rot=90 : handle extends DOWN,  impact face faces UP
+//   rot=270: handle extends UP,    impact face faces DOWN (striking pose)
+//   rot=315: handle extends upper-right, impact face faces lower-left (raised/cocked)
 //
-// Parameters:
-//   pivotX, pivotY — off-screen pivot point (simulates the blacksmith's shoulder)
-//   armLen         — distance from pivot to hammer head center
-//   angle          — current swing angle in radians
-//                    (0 = pointing straight down, negative = cocked back)
+// In local coords after translate(hx,hy)+rotate(rotDeg):
+//   Head block:    rect(-headW/2, -headH/2, headW, headH)  — centered at origin
+//   Impact face:   strip at the -X end of the head
+//   Handle:        extends in the +X direction from head right edge
 // ============================================================
 function drawHammer(
   ctx: CanvasRenderingContext2D,
-  pivotX: number,
-  pivotY: number,
-  armLen: number,
-  angle: number,   // radians: 0 = vertical (straight down)
+  pose: HammerPose,
   alpha: number,
 ) {
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
+  ctx.translate(pose.hx, pose.hy);
+  ctx.rotate(pose.rot * Math.PI / 180);
 
-  // --- Compute positions ---
-  // The hammer handle extends FROM the pivot outward at `angle`
-  // angle=0 means the handle hangs straight down; negative angles swing it back (clockwise = forward swing)
-  // We only draw the LOWER portion of the arm (from partial-arm-start to head)
+  const headW    = 58;   // head dimension along handle axis
+  const headH    = 82;   // head dimension perpendicular to handle
+  const handleW  = 15;
+  const handleLen = 280;
 
-  // Visible handle starts 26% of armLen from pivot (tuned value)
-  const visibleStart = 0.26;
+  // === WOODEN HANDLE (extends in +X direction from head right edge) ===
+  const handleGrad = ctx.createLinearGradient(0, -handleW / 2, 0, handleW / 2);
+  handleGrad.addColorStop(0,    '#3A2214');
+  handleGrad.addColorStop(0.20, '#5C4530');
+  handleGrad.addColorStop(0.45, '#6E5238');
+  handleGrad.addColorStop(0.65, '#604A30');
+  handleGrad.addColorStop(0.85, '#4A3320');
+  handleGrad.addColorStop(1,    '#2C1A0C');
 
-  // Compute the handle endpoint at full arm length
-  const headCX = pivotX + Math.cos(angle) * armLen;
-  const headCY = pivotY + Math.sin(angle) * armLen;
+  ctx.beginPath();
+  ctx.rect(headW / 2, -handleW / 2, handleLen, handleW);
+  ctx.fillStyle = handleGrad;
+  ctx.fill();
 
-  // Compute the handle start (partway up the arm)
-  const handleStartX = pivotX + Math.cos(angle) * (armLen * visibleStart);
-  const handleStartY = pivotY + Math.sin(angle) * (armLen * visibleStart);
-
-  // Perpendicular direction to the arm (for handle width)
-  const perpX = -Math.sin(angle);
-  const perpY =  Math.cos(angle);
-
-  const handleW = 15; // handle width in pixels (tuned)
-  const headW   = 82; // hammer head width perpendicular to handle (tuned)
-  const headLen = 58; // hammer head length along handle axis (tuned)
-
-  // Handle corners
-  const h0x = handleStartX + perpX * handleW / 2;
-  const h0y = handleStartY + perpY * handleW / 2;
-  const h1x = handleStartX - perpX * handleW / 2;
-  const h1y = handleStartY - perpY * handleW / 2;
-
-  // Where the head center is (a bit back from the tip — handle doesn't go all the way)
-  const headCenterX = pivotX + Math.cos(angle) * (armLen - headLen * 0.38);
-  const headCenterY = pivotY + Math.sin(angle) * (armLen - headLen * 0.38);
-
-  // === WOODEN HANDLE ===
-  {
-    const handleGrad = ctx.createLinearGradient(
-      headCX + perpX * handleW, headCY + perpY * handleW,
-      headCX - perpX * handleW, headCY - perpY * handleW,
-    );
-    handleGrad.addColorStop(0,    '#3A2214');
-    handleGrad.addColorStop(0.20, '#5C4530');
-    handleGrad.addColorStop(0.45, '#6E5238');
-    handleGrad.addColorStop(0.65, '#604A30');
-    handleGrad.addColorStop(0.85, '#4A3320');
-    handleGrad.addColorStop(1,    '#2C1A0C');
-
+  // Wood grain lines clipped to handle shape
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(headW / 2, -handleW / 2, handleLen, handleW);
+  ctx.clip();
+  for (let g = 0; g < 5; g++) {
+    const t = (g + 0.5) / 5;
+    const lineY = -handleW / 2 + handleW * t;
     ctx.beginPath();
-    ctx.moveTo(h0x, h0y);
-    ctx.lineTo(h1x, h1y);
-    // The handle widens slightly toward the head end (natural taper)
-    const h2x = headCenterX - perpX * (handleW * 0.65);
-    const h2y = headCenterY - perpY * (handleW * 0.65);
-    const h3x = headCenterX + perpX * (handleW * 0.65);
-    const h3y = headCenterY + perpY * (handleW * 0.65);
-    ctx.lineTo(h2x, h2y);
-    ctx.lineTo(h3x, h3y);
-    ctx.closePath();
-    ctx.fillStyle = handleGrad;
-    ctx.fill();
-
-    // Wood grain lines (subtle streaks along the handle)
-    ctx.save();
-    ctx.clip(); // clip to handle shape so grains don't leak out
-    for (let g = 0; g < 5; g++) {
-      const t = (g + 0.5) / 5;
-      const gx0 = handleStartX + perpX * (handleW * (t - 0.5));
-      const gy0 = handleStartY + perpY * (handleW * (t - 0.5));
-      const gx1 = headCenterX  + perpX * (handleW * (t - 0.5) * 0.65);
-      const gy1 = headCenterY  + perpY * (handleW * (t - 0.5) * 0.65);
-      ctx.beginPath();
-      ctx.moveTo(gx0, gy0);
-      ctx.lineTo(gx1, gy1);
-      ctx.strokeStyle = g % 2 === 0 ? 'rgba(0,0,0,0.14)' : 'rgba(100,70,40,0.10)';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  // === IRON HAMMER HEAD ===
-  // The head is a roughly rectangular block oriented perpendicular to the handle.
-  // One face (the poll/flat striking face) points downward; the other end
-  // is the cross-peen (a ridge, slightly narrower).
-  {
-    ctx.save();
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = 'rgba(0,0,0,0.55)';
-
-    // Head corners — rectangle centered at headCenterX/Y, oriented along the handle axis
-    // The head's length axis is ALONG the handle; width axis is PERPENDICULAR
-    const axX = Math.cos(angle);   // unit vector along arm (toward head)
-    const axY = Math.sin(angle);
-
-    // Four corners of the hammer head block
-    const hfl = headLen * 0.62;  // front (toward impact face) length from center
-    const hbl = headLen * 0.38;  // back (toward peen) length from center
-    const hw2 = headW / 2;       // half-width
-
-    // Front-left, front-right, back-right, back-left
-    const flx = headCenterX + axX * hfl - perpX * hw2;
-    const fly = headCenterY + axY * hfl - perpY * hw2;
-    const frx = headCenterX + axX * hfl + perpX * hw2;
-    const fry = headCenterY + axY * hfl + perpY * hw2;
-    const brx = headCenterX - axX * hbl + perpX * hw2;
-    const bry = headCenterY - axY * hbl + perpY * hw2;
-    const blx = headCenterX - axX * hbl - perpX * hw2;
-    const bly = headCenterY - axY * hbl - perpY * hw2;
-
-    // Main head gradient — across the width (perpendicular to swing)
-    const headGrad = ctx.createLinearGradient(
-      headCenterX - perpX * hw2, headCenterY - perpY * hw2,
-      headCenterX + perpX * hw2, headCenterY + perpY * hw2,
-    );
-    headGrad.addColorStop(0,    '#1E1E24');
-    headGrad.addColorStop(0.12, '#32323C');
-    headGrad.addColorStop(0.40, '#4A4A56');
-    headGrad.addColorStop(0.58, '#525260');  // highlight center
-    headGrad.addColorStop(0.80, '#3A3A44');
-    headGrad.addColorStop(1,    '#1C1C22');
-
-    ctx.beginPath();
-    ctx.moveTo(flx, fly);
-    ctx.lineTo(frx, fry);
-    ctx.lineTo(brx, bry);
-    ctx.lineTo(blx, bly);
-    ctx.closePath();
-    ctx.fillStyle = headGrad;
-    ctx.fill();
-
-    ctx.restore();
-
-    // Impact face (front face of head — the flat striking surface)
-    // Slightly lighter/worn from use
-    const faceGrad2 = ctx.createLinearGradient(
-      flx, fly, frx, fry,
-    );
-    faceGrad2.addColorStop(0,   '#282830');
-    faceGrad2.addColorStop(0.5, '#565664');
-    faceGrad2.addColorStop(1,   '#262830');
-    ctx.beginPath();
-    // Impact face is a narrow strip at the front of the head
-    const faceDepth = 6;
-    const iflx = flx - axX * faceDepth;
-    const ifly = fly - axY * faceDepth;
-    const ifrx = frx - axX * faceDepth;
-    const ifry = fry - axY * faceDepth;
-    ctx.moveTo(flx, fly);
-    ctx.lineTo(frx, fry);
-    ctx.lineTo(ifrx, ifry);
-    ctx.lineTo(iflx, ifly);
-    ctx.closePath();
-    ctx.fillStyle = faceGrad2;
-    ctx.fill();
-
-    // Cross-peen wedge on back of head (the ridge used for drawing out metal)
-    // The peen tapers to a line along the perpendicular axis
-    const peenTaper = hw2 * 0.42; // peen is narrower than full head width
-    const peenDepth = 8;
-    const pblx = blx + axX * peenDepth;
-    const pbly = bly + axY * peenDepth;
-    const pbrx = brx + axX * peenDepth;
-    const pbry = bry + axY * peenDepth;
-    const peenTipLx = headCenterX - axX * hbl - perpX * peenTaper;
-    const peenTipLy = headCenterY - axY * hbl - perpY * peenTaper;
-    const peenTipRx = headCenterX - axX * hbl + perpX * peenTaper;
-    const peenTipRy = headCenterY - axY * hbl + perpY * peenTaper;
-
-    ctx.beginPath();
-    ctx.moveTo(pblx, pbly);
-    ctx.lineTo(pbrx, pbry);
-    ctx.lineTo(peenTipRx, peenTipRy);
-    ctx.lineTo(blx, bly);
-    ctx.lineTo(brx, bry);
-    ctx.lineTo(peenTipLx, peenTipLy); // wait — let me simplify the peen
-    ctx.closePath();
-
-    // Simpler peen: just a slight bevel indicating the back wedge shape
-    ctx.beginPath();
-    ctx.moveTo(blx, bly);
-    ctx.lineTo(brx, bry);
-    const peenMidX = (blx + brx) / 2 - axX * peenDepth;
-    const peenMidY = (bly + bry) / 2 - axY * peenDepth;
-    ctx.lineTo(peenMidX + perpX * peenTaper, peenMidY + perpY * peenTaper);
-    ctx.lineTo(peenMidX - perpX * peenTaper, peenMidY - perpY * peenTaper);
-    ctx.closePath();
-
-    const peenGrad = ctx.createLinearGradient(blx, bly, peenMidX, peenMidY);
-    peenGrad.addColorStop(0, '#303038');
-    peenGrad.addColorStop(1, '#1A1A20');
-    ctx.fillStyle = peenGrad;
-    ctx.fill();
-
-    // Top-edge highlight of head
-    ctx.beginPath();
-    ctx.moveTo(blx + perpX * 2, bly + perpY * 2);
-    ctx.lineTo(brx + perpX * 2, bry + perpY * 2);
-    ctx.strokeStyle = 'rgba(130,130,148,0.20)';
-    ctx.lineWidth = 1.5;
+    ctx.moveTo(headW / 2, lineY);
+    ctx.lineTo(headW / 2 + handleLen, lineY);
+    ctx.strokeStyle = g % 2 === 0 ? 'rgba(0,0,0,0.12)' : 'rgba(100,70,40,0.09)';
+    ctx.lineWidth = 0.8;
     ctx.stroke();
   }
+  ctx.restore();
+
+  // === IRON HAMMER HEAD (centered at local origin) ===
+  ctx.save();
+  ctx.shadowBlur  = 18;
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+
+  const headGrad = ctx.createLinearGradient(0, -headH / 2, 0, headH / 2);
+  headGrad.addColorStop(0,    '#1E1E24');
+  headGrad.addColorStop(0.12, '#32323C');
+  headGrad.addColorStop(0.40, '#4A4A56');
+  headGrad.addColorStop(0.58, '#525260');
+  headGrad.addColorStop(0.80, '#3A3A44');
+  headGrad.addColorStop(1,    '#1C1C22');
+
+  ctx.beginPath();
+  ctx.rect(-headW / 2, -headH / 2, headW, headH);
+  ctx.fillStyle = headGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // Impact face strip — at the -X end (the striking face)
+  const faceGrad = ctx.createLinearGradient(0, -headH / 2, 0, headH / 2);
+  faceGrad.addColorStop(0,   '#282830');
+  faceGrad.addColorStop(0.5, '#565664');
+  faceGrad.addColorStop(1,   '#262830');
+  ctx.beginPath();
+  ctx.rect(-headW / 2, -headH / 2, 6, headH);
+  ctx.fillStyle = faceGrad;
+  ctx.fill();
+
+  // Top-edge highlight on head
+  ctx.beginPath();
+  ctx.moveTo(-headW / 2, -headH / 2 + 2);
+  ctx.lineTo( headW / 2, -headH / 2 + 2);
+  ctx.strokeStyle = 'rgba(130,130,148,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
   ctx.restore();
 }
@@ -671,12 +236,11 @@ function drawStrikeGlow(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  intensity: number,  // 0–1
+  intensity: number,
 ) {
   if (intensity <= 0) return;
   ctx.save();
 
-  // Outer warm ambient glow (elliptical — spreads wider than tall on the face)
   const outerR = 90 * intensity;
   const outer  = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR);
   outer.addColorStop(0,   `rgba(255, 160, 20,  ${0.40 * intensity})`);
@@ -687,7 +251,6 @@ function drawStrikeGlow(
   ctx.ellipse(cx, cy, outerR, outerR * 0.50, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Hot white-orange core at impact point
   ctx.save();
   ctx.shadowBlur  = 28 * intensity;
   ctx.shadowColor = `rgba(255, 200, 60, ${0.85 * intensity})`;
@@ -715,27 +278,23 @@ function drawSparks(
 ) {
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
-    // Physics update
     s.x  += s.vx;
     s.y  += s.vy;
-    s.vy += 0.15;   // gravity
-    s.vx *= 0.97;   // horizontal drag
+    s.vy += 0.15;
+    s.vx *= 0.97;
     s.life -= 0.024;
     if (s.life <= 0) { sparks.splice(i, 1); continue; }
 
-    // Draw spark
     ctx.save();
     ctx.shadowBlur  = 7;
     ctx.shadowColor = `rgba(255, 180, 40, ${s.life * 0.55})`;
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
-    // Color transitions from white-yellow → copper-gold → dim orange as life fades
     const r = 255;
     const g = Math.round(180 + s.brightness * 75);
     const b = Math.round(40  + s.brightness * 55);
     ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${s.life * 0.92})`;
     ctx.fill();
-    // Bright white-yellow core while still fresh
     if (s.life > 0.38) {
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.size * 0.28 * s.life, 0, Math.PI * 2);
@@ -747,7 +306,11 @@ function drawSparks(
 }
 
 // ============================================================
-// MAIN SCENE — all phases driven by scroll progress 0–1
+// MAIN SCENE — position-based keyframe animation driven by scroll 0–1
+//
+// Timing defaults (match hammer-tuner defaults):
+//   Strike 1: start=0.30, hit=0.42
+//   Strike 2: start=0.52, hit=0.65
 // ============================================================
 function drawScene(
   ctx: CanvasRenderingContext2D,
@@ -759,121 +322,133 @@ function drawScene(
   ctx.clearRect(0, 0, w, h);
   if (progress <= 0.01) return;
 
-  // ============================================================
-  // LAYOUT ANCHORS
-  // The anvil sits roughly centered in the right ~55% of the canvas.
-  // anvilCX  = horizontal center of the anvil body (throat centerline)
-  // anvilTopY = y-coordinate of the TOP of the anvil face plate
-  // ============================================================
-  const anvilCX   = w * 0.62;
-  const anvilTopY = h * 0.50;
-  const anvilScale = 0.88;  // scale down slightly so full anvil fits with horn
+  // ── Layout anchors ─────────────────────────────────────────────
+  // Anvil sits in the right ~55% of the canvas (canvas itself is already the right 58%).
+  // anvilCX  = horizontal center of the anvil throat/body
+  // anvilTopY = y of the TOP of the anvil working face
+  const anvilCX    = w * 0.62;
+  const anvilTopY  = h * 0.50;
+  const anvilScale = 0.88;
 
-  // Impact point on the anvil face (where hammer strikes)
-  // Slightly left of center (where a blacksmith would aim, between center and horn)
-  const impactX = anvilCX - 18;
-  const impactY = anvilTopY;
+  // Impact point: where the hammer face contacts the anvil
+  // Slightly left of body center (working area between horn and hardy hole)
+  const impactX = anvilCX - 20;
+  const impactY = anvilTopY - 2;
 
-  // ============================================================
-  // PHASE TIMINGS
-  // ============================================================
+  // ── Timing constants ───────────────────────────────────────────
+  const APPEAR_START = 0.15;
+  const S1_START     = 0.30;
+  const S1_HIT       = 0.42;
+  const S2_START     = 0.52;
+  const S2_HIT       = 0.65;
+  const L1_DUR       = 0.10;
+  const L2_DUR       = 0.15;
 
-  // 0.00–0.15: Anvil fades/scales in
+  // ── Anvil alpha (fade in/out at section boundaries) ────────────
   const anvilAlpha = progress < 0.15
     ? Math.min(1, progress / 0.15)
     : progress > 0.85
       ? Math.max(0, 1 - (progress - 0.85) / 0.15)
       : 1;
 
-  const anvilScaleMod = progress < 0.15
-    ? 0.88 + (progress / 0.15) * 0.12
-    : 1.0;
+  // ── Key poses ──────────────────────────────────────────────────
+  // RAISED: hammer is held high to the right, ready to strike down-left.
+  //   rot=315°: handle points upper-right, impact face (-X end) faces lower-left toward anvil.
+  const RAISED: HammerPose = {
+    hx:  impactX + 110,
+    hy:  impactY - 195,
+    rot: 315,
+  };
 
-  // 0.15–0.35: Hammer arm swings into view (raised/cocked position)
-  const hammerAppear = progress < 0.15 ? 0 : Math.min(1, (progress - 0.15) / 0.20);
+  // IMPACT: hammer face (at -X end of head in local space) is on the anvil face.
+  //   rot=270°: impact face points straight down (-X local → world -Y reversed = +Y... )
+  //   At rot=270: local +X maps to world (cos270°, sin270°) = (0, -1) = UP.
+  //               local -X maps to world DOWN (+Y). So impact face points DOWN. ✓
+  //   Head center offset: the impact face is at x=-headW/2=-29 in local. After rotation 270°
+  //   that becomes y=+29 below center. So center must be 29px ABOVE impactY: hy = impactY - 29.
+  const IMPACT: HammerPose = {
+    hx:  impactX,
+    hy:  impactY - 29,
+    rot: 270,
+  };
 
-  // ============================================================
-  // HAMMER PIVOT & ARC SETUP
-  //
-  // The PIVOT is the END OF THE HANDLE — where the blacksmith grips it.
-  // It's off-screen to the RIGHT of the anvil. The hammer head is at the
-  // far end of the arm. The whole thing swings in an arc: head starts
-  // raised up to the right, swings DOWN and LEFT, head strikes the anvil.
-  //
-  // Think: person standing to the right, holding handle end, swinging
-  // the head down onto the anvil face in an arc.
-  // ============================================================
-  // Pivot = where the blacksmith's hand grips the handle end.
-  // Far RIGHT, slightly above anvil face (like a raised hand).
-  // Head FACE (not center) should land on the impact point.
-  // TUNED VALUES from interactive hammer-tuner.html
-  // Pivot: +0.21w right of anvil center, 45px above face
-  const pivotX = w * 0.83;
-  const pivotY = anvilTopY - 45;
+  // BOUNCE: hammer lifts slightly after impact.
+  //   Head rises a bit, rotation tilts back slightly past vertical.
+  const BOUNCE: HammerPose = {
+    hx:  impactX + 18,
+    hy:  impactY - 65,
+    rot: 285,
+  };
 
-  const dxImpact = impactX - pivotX;
-  const dyImpact = impactY - pivotY;
-  const rawDist  = Math.sqrt(dxImpact * dxImpact + dyImpact * dyImpact);
-  const armLen   = rawDist - 3;
+  // ── Compute current pose ───────────────────────────────────────
+  let pose: HammerPose | null = null;
+  let hammerAlpha = 0;
 
-  const angleImpact = Math.atan2(dyImpact, dxImpact);
-  const angleCocked = angleImpact + 0.51;
-  const angleLift   = angleImpact + 0.05;
-
-  // 0.35–0.45: FIRST STRIKE — hammer arcs down to anvil
-  const strike1 = progress < 0.35 ? 0 : Math.min(1, (progress - 0.35) / 0.10);
-  // 0.45–0.55: Hammer bounces up
-  const lift1   = progress < 0.45 ? 0 : Math.min(1, (progress - 0.45) / 0.10);
-  // 0.55–0.70: SECOND STRIKE (bigger) — hammer swings down harder
-  const strike2 = progress < 0.55 ? 0 : Math.min(1, (progress - 0.55) / 0.13);
-  // 0.70–0.85: Hammer lifts, sparks trail off
-  const lift2   = progress < 0.70 ? 0 : Math.min(1, (progress - 0.70) / 0.15);
-
-  // Compute current hammer swing angle
-  let hammerAngle: number;
-  if (hammerAppear < 1) {
-    // Swinging into view — starts higher than cocked, settles to cocked rest
-    const entryCocked = angleCocked + 0.35;  // tuned entry offset
-    const ease = 1 - Math.pow(1 - hammerAppear, 2);
-    hammerAngle = entryCocked + (angleCocked - entryCocked) * ease;
-  } else if (strike1 < 1) {
-    // First strike: swing from cocked to impact angle (eased in for realism)
-    const ease = 1 - Math.pow(1 - strike1, 3);
-    hammerAngle = angleCocked + (angleImpact - angleCocked) * ease;
-  } else if (lift1 < 1) {
-    // Bounce back from first strike
-    const ease = Math.pow(lift1, 2);
-    hammerAngle = angleImpact + (angleLift - angleImpact) * ease;
-  } else if (strike2 < 1) {
-    // Second strike: starts from lift position, swings harder/deeper
-    const angleImpact2 = angleImpact - 0.03; // slightly past impact (deeper strike)
-    const ease = 1 - Math.pow(1 - strike2, 3);
-    hammerAngle = angleLift + (angleImpact2 - angleLift) * ease;
+  if (progress < APPEAR_START) {
+    // Not yet visible
+    hammerAlpha = 0;
+  } else if (progress < S1_START) {
+    // Fade in: drift from slightly off-screen to RAISED position
+    const t     = (progress - APPEAR_START) / Math.max(0.001, S1_START - APPEAR_START);
+    const eased = easeOut3(t);
+    const OFFSCREEN: HammerPose = {
+      hx:  RAISED.hx + 80,
+      hy:  RAISED.hy - 60,
+      rot: RAISED.rot - 25,
+    };
+    pose = lerpPose(OFFSCREEN, RAISED, eased);
+    hammerAlpha = Math.min(1, t * 3);
+  } else if (progress < S1_HIT) {
+    // Strike 1: RAISED → IMPACT with ease-in (accelerating swing)
+    const t = (progress - S1_START) / Math.max(0.001, S1_HIT - S1_START);
+    pose = lerpPose(RAISED, IMPACT, easeIn3(t));
+    hammerAlpha = 1;
+  } else if (progress < S2_START) {
+    // Between strikes: IMPACT → BOUNCE → RAISED
+    const segDur = S2_START - S1_HIT;
+    const t      = (progress - S1_HIT) / Math.max(0.001, segDur);
+    if (t < 0.35) {
+      pose = lerpPose(IMPACT, BOUNCE, easeOut3(t / 0.35));
+    } else {
+      pose = lerpPose(BOUNCE, RAISED, easeOut3((t - 0.35) / 0.65));
+    }
+    hammerAlpha = 1;
+  } else if (progress < S2_HIT) {
+    // Strike 2: RAISED → IMPACT with ease-in
+    const t = (progress - S2_START) / Math.max(0.001, S2_HIT - S2_START);
+    pose = lerpPose(RAISED, IMPACT, easeIn3(t));
+    hammerAlpha = 1;
+  } else if (progress < 0.85) {
+    // After strike 2: IMPACT → BOUNCE → RAISED
+    const segDur = 0.85 - S2_HIT;
+    const t      = (progress - S2_HIT) / Math.max(0.001, segDur);
+    if (t < 0.25) {
+      pose = lerpPose(IMPACT, BOUNCE, easeOut3(t / 0.25));
+    } else {
+      pose = lerpPose(BOUNCE, RAISED, easeOut3((t - 0.25) / 0.75));
+    }
+    hammerAlpha = 1;
   } else {
-    // Lift after second strike + fade
-    const ease = Math.pow(lift2, 0.7);
-    hammerAngle = (angleImpact - 0.03) + (angleLift + 0.05 - (angleImpact - 0.03)) * ease;
+    // Fade out at raised position
+    pose = RAISED;
+    hammerAlpha = Math.max(0, 1 - (progress - 0.85) / 0.15);
   }
 
-  // ============================================================
-  // STRIKE GLOW INTENSITY
-  // Peaks sharply at impact, decays during lift
-  // ============================================================
+  // ── Strike glow intensity ──────────────────────────────────────
   let glowIntensity = 0;
-  // First strike glow
-  if (strike1 >= 0.90 && lift1 < 1) {
-    glowIntensity = Math.max(0, 1 - lift1 * 2.2);
+
+  if (progress >= S1_HIT && progress < S1_HIT + L1_DUR) {
+    const t = (progress - S1_HIT) / L1_DUR;
+    glowIntensity = Math.max(0, 1 - t * 2.2);
   }
-  // Second strike glow (brighter)
-  if (strike2 >= 0.90 && lift2 < 1) {
-    const g2 = Math.max(0, 1 - lift2 * 2.0) * 1.25;
+  if (progress >= S2_HIT && progress < S2_HIT + L2_DUR) {
+    const t  = (progress - S2_HIT) / L2_DUR;
+    const g2 = Math.max(0, 1 - t * 2.0) * 1.25;
     glowIntensity = Math.max(glowIntensity, g2);
   }
   glowIntensity = Math.min(1, glowIntensity);
 
-  // ============================================================
-  // AMBIENT SCREEN GLOW during strikes
-  // ============================================================
+  // ── Ambient screen glow during strikes ────────────────────────
   if (glowIntensity > 0 && anvilAlpha > 0) {
     const ambR    = w * 0.40 * glowIntensity;
     const ambient = ctx.createRadialGradient(impactX, impactY, 0, impactX, impactY, ambR);
@@ -884,35 +459,26 @@ function drawScene(
     ctx.fillRect(0, 0, w, h);
   }
 
-  // ============================================================
-  // DRAW: Anvil
-  // ============================================================
-  drawAnvil(ctx, anvilCX, anvilTopY, anvilScale * anvilScaleMod, anvilAlpha);
+  // ── Draw: anvil ────────────────────────────────────────────────
+  drawAnvil(ctx, anvilCX, anvilTopY, anvilScale, anvilAlpha);
 
-  // ============================================================
-  // DRAW: Strike glow on anvil face
-  // ============================================================
+  // ── Draw: strike glow on anvil face ───────────────────────────
   drawStrikeGlow(ctx, impactX, impactY + 4, glowIntensity * anvilAlpha);
 
-  // ============================================================
-  // SPAWN SPARKS at strike moments
-  // ============================================================
-  // Sparks fire at moment of impact and continue during early lift
-  const isStriking1 = strike1 > 0.90 && lift1 < 0.45;
-  const isStriking2 = strike2 > 0.90 && lift2 < 0.50;
+  // ── Spawn sparks at strike moments ────────────────────────────
+  const isStriking1 = progress > S1_HIT && progress < S1_HIT + L1_DUR * 0.45;
+  const isStriking2 = progress > S2_HIT && progress < S2_HIT + L2_DUR * 0.50;
 
   if ((isStriking1 || isStriking2) && time % 2 === 0) {
     const burstCount = isStriking2 ? 9 : 6;
     for (let i = 0; i < burstCount; i++) {
-      // Sparks burst outward from impact point — biased UPWARD and to the sides
-      // Real smithing sparks fly mostly upward and away from the strike
-      const angle = (Math.random() * Math.PI * 1.6) - Math.PI * 1.3; // mostly upper hemisphere
+      const angle = (Math.random() * Math.PI * 1.6) - Math.PI * 1.3;
       const speed = 3.0 + Math.random() * 6.0;
       sparks.push({
         x:          impactX + (Math.random() - 0.5) * 14,
         y:          impactY - 2,
         vx:         Math.cos(angle) * speed,
-        vy:         Math.sin(angle) * speed - 3.0,  // strong upward bias
+        vy:         Math.sin(angle) * speed - 3.0,
         life:       0.6 + Math.random() * 0.5,
         size:       1.4 + Math.random() * 3.0,
         brightness: 0.55 + Math.random() * 0.45,
@@ -920,7 +486,6 @@ function drawScene(
     }
   }
 
-  // Trickle sparks while glow is still active (cooling sparks)
   if (glowIntensity > 0.18 && time % 3 === 0) {
     sparks.push({
       x:          impactX + (Math.random() - 0.5) * 22,
@@ -933,19 +498,13 @@ function drawScene(
     });
   }
 
-  // ============================================================
-  // DRAW: Sparks (drawn AFTER anvil but BEFORE hammer)
-  // ============================================================
+  // ── Draw: sparks (after anvil, before hammer) ─────────────────
   drawSparks(ctx, sparks);
 
-  // ============================================================
-  // DRAW: Hammer (topmost layer)
-  // ============================================================
-  if (hammerAppear > 0) {
-    const hammerAlpha = progress > 0.85
-      ? Math.max(0, 1 - (progress - 0.85) / 0.15) * anvilAlpha
-      : hammerAppear;
-    drawHammer(ctx, pivotX, pivotY, armLen, hammerAngle, hammerAlpha);
+  // ── Draw: hammer (topmost layer) ──────────────────────────────
+  if (pose && hammerAlpha > 0) {
+    const finalAlpha = hammerAlpha * (anvilAlpha > 0 ? 1 : 0);
+    drawHammer(ctx, pose, finalAlpha);
   }
 }
 
