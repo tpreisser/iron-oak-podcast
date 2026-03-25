@@ -275,6 +275,9 @@ export function OakMissionSection() {
             On lg+: 45% width, roots fill the right side.
         */}
         <div ref={textRef} className="w-full lg:w-[45%] px-6 pr-8 sm:pr-6 lg:pl-12 xl:pl-20 relative z-10">
+          <p className="mission-text-item text-sm md:text-base text-[var(--text-tertiary)] italic leading-relaxed mb-6 max-w-lg opacity-0">
+            Not to lecture. Not to perform. To dig into Scripture, into doubt, into the questions most people are afraid to ask. A space where faith gets pressure-tested and Christ remains the answer.
+          </p>
           <span className="mission-text-item block font-[family-name:var(--font-accent)] text-sm tracking-[0.2em] uppercase text-[var(--accent-oak)] mb-4 opacity-0">
             Our Mission
           </span>

@@ -29,7 +29,7 @@ export function Header() {
       <div className="container-default flex items-center justify-between h-16 lg:h-20">
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <Image
-            src={assetPath("/images/iron-oak-cross.webp")}
+            src={assetPath("/images/iron-oak-icon.webp")}
             alt="Iron & Oak"
             width={120}
             height={120}

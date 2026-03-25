@@ -3,14 +3,6 @@
 import { useRef, useEffect } from 'react';
 import { useGSAP } from '@/hooks/useGSAP';
 
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
-
 interface Spark {
   x: number; y: number;
   vx: number; vy: number;
@@ -19,6 +11,339 @@ interface Spark {
   brightness: number;
 }
 
+// ============================================================
+// ANVIL DRAWING — London pattern (flat top, horn left, heel
+// right, waisted body, broad base)
+// ============================================================
+function drawAnvil(
+  ctx: CanvasRenderingContext2D,
+  cx: number,  // center x of anvil body
+  cy: number,  // center y of top face
+  scale: number,
+  alpha: number,
+) {
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  // ---- dimensions (all relative to scale=1) ----
+  const faceW = 200;   // top face width
+  const faceH = 14;    // top face thickness
+  const bodyTopW = 150;
+  const bodyBotW = 180;
+  const bodyH = 55;    // waist height
+  const baseW = 220;
+  const baseH = 38;
+  const hornLen = 90;  // horn extends left
+  const hornTip = 14;  // horn tip height
+  const heelW = 38;    // heel extends right past face
+
+  // Vertical reference points
+  const topY = 0;                       // top of face
+  const faceBot = faceH;                // bottom of face plate
+  const bodyTop = faceBot;
+  const bodyBot = bodyTop + bodyH;
+  const baseTop = bodyBot;
+  const baseBot = baseTop + baseH;
+
+  // --- Shadow beneath anvil ---
+  ctx.save();
+  const shadowGrad = ctx.createRadialGradient(0, baseBot + 10, 10, 0, baseBot + 10, 160);
+  shadowGrad.addColorStop(0, 'rgba(0,0,0,0.45)');
+  shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shadowGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, baseBot + 12, 160, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // --- Base ---
+  ctx.beginPath();
+  ctx.moveTo(-baseW / 2, baseTop);
+  ctx.lineTo(baseW / 2, baseTop);
+  ctx.lineTo(baseW / 2, baseBot);
+  ctx.lineTo(-baseW / 2, baseBot);
+  ctx.closePath();
+  const baseGrad = ctx.createLinearGradient(-baseW / 2, 0, baseW / 2, 0);
+  baseGrad.addColorStop(0, '#252528');
+  baseGrad.addColorStop(0.15, '#3A3A40');
+  baseGrad.addColorStop(0.5, '#4A4A50');
+  baseGrad.addColorStop(0.85, '#3A3A40');
+  baseGrad.addColorStop(1, '#252528');
+  ctx.fillStyle = baseGrad;
+  ctx.fill();
+
+  // Base highlight edge
+  ctx.beginPath();
+  ctx.moveTo(-baseW / 2, baseTop);
+  ctx.lineTo(baseW / 2, baseTop);
+  ctx.strokeStyle = 'rgba(100,100,110,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // --- Waisted body ---
+  // Body narrows at mid-point then widens at base (classic waist shape)
+  const waistX = bodyTopW * 0.28; // how much the sides curve in
+  ctx.beginPath();
+  ctx.moveTo(-bodyTopW / 2, bodyTop);
+  ctx.bezierCurveTo(
+    -bodyTopW / 2 - waistX, bodyTop + bodyH * 0.35,
+    -bodyBotW / 2, bodyBot - bodyH * 0.3,
+    -bodyBotW / 2, bodyBot
+  );
+  ctx.lineTo(bodyBotW / 2, bodyBot);
+  ctx.bezierCurveTo(
+    bodyBotW / 2, bodyBot - bodyH * 0.3,
+    bodyTopW / 2 + waistX, bodyTop + bodyH * 0.35,
+    bodyTopW / 2, bodyTop
+  );
+  ctx.closePath();
+  const bodyGrad = ctx.createLinearGradient(-bodyTopW / 2, 0, bodyTopW / 2, 0);
+  bodyGrad.addColorStop(0, '#202024');
+  bodyGrad.addColorStop(0.18, '#373740');
+  bodyGrad.addColorStop(0.5, '#474750');
+  bodyGrad.addColorStop(0.82, '#37373E');
+  bodyGrad.addColorStop(1, '#1E1E22');
+  ctx.fillStyle = bodyGrad;
+  ctx.fill();
+
+  // Body side highlight
+  ctx.beginPath();
+  ctx.moveTo(-bodyTopW / 2, bodyTop);
+  ctx.bezierCurveTo(
+    -bodyTopW / 2 - waistX, bodyTop + bodyH * 0.35,
+    -bodyBotW / 2, bodyBot - bodyH * 0.3,
+    -bodyBotW / 2, bodyBot
+  );
+  ctx.strokeStyle = 'rgba(60,60,68,0.6)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // --- Face plate (top surface) ---
+  // Extends beyond body: horn side left, heel side right
+  const faceLeft = -faceW / 2 - hornLen;
+  const faceRight = faceW / 2 + heelW;
+  ctx.beginPath();
+  ctx.rect(faceLeft, topY, faceRight - faceLeft, faceH);
+  const faceGrad = ctx.createLinearGradient(faceLeft, 0, faceRight, 0);
+  faceGrad.addColorStop(0, '#2A2A2E');
+  faceGrad.addColorStop(0.15, '#3E3E44');
+  faceGrad.addColorStop(0.4, '#555560');
+  faceGrad.addColorStop(0.5, '#5C5C68');  // brightest at center
+  faceGrad.addColorStop(0.6, '#555560');
+  faceGrad.addColorStop(0.85, '#3E3E44');
+  faceGrad.addColorStop(1, '#2A2A2E');
+  ctx.fillStyle = faceGrad;
+  ctx.fill();
+
+  // Face top highlight line
+  ctx.beginPath();
+  ctx.moveTo(faceLeft + 4, topY + 1.5);
+  ctx.lineTo(faceRight - 4, topY + 1.5);
+  ctx.strokeStyle = 'rgba(130,130,145,0.22)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  // Face bottom edge (cast shadow line)
+  ctx.beginPath();
+  ctx.moveTo(faceLeft, faceBot);
+  ctx.lineTo(faceRight, faceBot);
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // --- Horn (tapers from face left edge to a rounded tip, pointing left) ---
+  ctx.beginPath();
+  ctx.moveTo(-faceW / 2 - hornLen, topY);         // horn tip top
+  ctx.lineTo(-faceW / 2, topY);                   // connects to face
+  ctx.lineTo(-faceW / 2, faceBot);                // face bottom left
+  ctx.quadraticCurveTo(
+    -faceW / 2 - hornLen * 0.6, faceBot + hornTip * 0.6,
+    -faceW / 2 - hornLen, topY + hornTip / 2      // horn tip
+  );
+  ctx.closePath();
+  const hornGrad = ctx.createLinearGradient(-faceW / 2 - hornLen, 0, -faceW / 2, 0);
+  hornGrad.addColorStop(0, '#252528');
+  hornGrad.addColorStop(0.5, '#3A3A40');
+  hornGrad.addColorStop(1, '#484850');
+  ctx.fillStyle = hornGrad;
+  ctx.fill();
+
+  // Horn top edge highlight
+  ctx.beginPath();
+  ctx.moveTo(-faceW / 2 - hornLen, topY);
+  ctx.lineTo(-faceW / 2, topY);
+  ctx.strokeStyle = 'rgba(110,110,125,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // --- Heel (small protrusion right side) ---
+  ctx.beginPath();
+  ctx.rect(faceW / 2, topY, heelW, faceH);
+  const heelGrad = ctx.createLinearGradient(faceW / 2, 0, faceW / 2 + heelW, 0);
+  heelGrad.addColorStop(0, '#48484E');
+  heelGrad.addColorStop(1, '#282830');
+  ctx.fillStyle = heelGrad;
+  ctx.fill();
+
+  // Heel top edge
+  ctx.beginPath();
+  ctx.moveTo(faceW / 2, topY);
+  ctx.lineTo(faceW / 2 + heelW, topY);
+  ctx.strokeStyle = 'rgba(110,110,125,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ============================================================
+// HAMMER DRAWING — rectangular iron head, wooden handle,
+// descending from above
+// ============================================================
+function drawHammer(
+  ctx: CanvasRenderingContext2D,
+  headCX: number,  // center x of hammer head
+  headY: number,   // bottom of hammer head (impact face)
+  alpha: number,
+) {
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  const headW = 80;
+  const headH = 55;
+  const handleW = 16;
+  const handleLen = 170;
+
+  const headTop = headY - headH;
+  const handleTop = headTop - handleLen;
+  const handleX = headCX - handleW / 2;
+
+  // --- Handle shadow ---
+  ctx.save();
+  ctx.shadowBlur = 14;
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+
+  // Wooden handle
+  ctx.beginPath();
+  ctx.rect(handleX, handleTop, handleW, handleLen + headH / 2);
+  const handleGrad = ctx.createLinearGradient(handleX, 0, handleX + handleW, 0);
+  handleGrad.addColorStop(0, '#3D2A18');
+  handleGrad.addColorStop(0.3, '#5C4530');
+  handleGrad.addColorStop(0.6, '#6B5138');
+  handleGrad.addColorStop(0.85, '#4E3622');
+  handleGrad.addColorStop(1, '#2E1E10');
+  ctx.fillStyle = handleGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // Wood grain lines on handle
+  for (let g = 0; g < 6; g++) {
+    const gx = handleX + 3 + g * (handleW / 6);
+    ctx.beginPath();
+    ctx.moveTo(gx, handleTop + 10);
+    ctx.lineTo(gx + (g % 2 === 0 ? 1 : -1) * 2, headTop);
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
+
+  // --- Iron hammer head ---
+  ctx.save();
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+
+  ctx.beginPath();
+  ctx.rect(headCX - headW / 2, headTop, headW, headH);
+  const headGrad = ctx.createLinearGradient(headCX - headW / 2, 0, headCX + headW / 2, 0);
+  headGrad.addColorStop(0, '#252528');
+  headGrad.addColorStop(0.15, '#373740');
+  headGrad.addColorStop(0.5, '#4E4E58');
+  headGrad.addColorStop(0.85, '#373740');
+  headGrad.addColorStop(1, '#252528');
+  ctx.fillStyle = headGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // Head top highlight
+  ctx.beginPath();
+  ctx.moveTo(headCX - headW / 2 + 3, headTop + 2);
+  ctx.lineTo(headCX + headW / 2 - 3, headTop + 2);
+  ctx.strokeStyle = 'rgba(130,130,145,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Head bottom (impact face) — slightly brighter, worn
+  ctx.beginPath();
+  ctx.rect(headCX - headW / 2, headY - 6, headW, 6);
+  const faceGrad = ctx.createLinearGradient(headCX - headW / 2, 0, headCX + headW / 2, 0);
+  faceGrad.addColorStop(0, '#303038');
+  faceGrad.addColorStop(0.5, '#5A5A65');
+  faceGrad.addColorStop(1, '#303038');
+  ctx.fillStyle = faceGrad;
+  ctx.fill();
+
+  // Corner bevels on head
+  ctx.beginPath();
+  ctx.moveTo(headCX - headW / 2, headTop);
+  ctx.lineTo(headCX - headW / 2 + 6, headTop);
+  ctx.moveTo(headCX + headW / 2 - 6, headTop);
+  ctx.lineTo(headCX + headW / 2, headTop);
+  ctx.strokeStyle = 'rgba(80,80,90,0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ============================================================
+// HOT GLOW on anvil face at strike point
+// ============================================================
+function drawStrikeGlow(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  intensity: number, // 0–1
+) {
+  if (intensity <= 0) return;
+  ctx.save();
+
+  // Outer warm glow
+  const outerR = 80 * intensity;
+  const outer = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR);
+  outer.addColorStop(0, `rgba(255, 160, 20, ${0.35 * intensity})`);
+  outer.addColorStop(0.4, `rgba(200, 80, 5, ${0.18 * intensity})`);
+  outer.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = outer;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, outerR, outerR * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hot white-orange core at impact point
+  ctx.save();
+  ctx.shadowBlur = 24 * intensity;
+  ctx.shadowColor = `rgba(255, 200, 60, ${0.8 * intensity})`;
+  const innerR = 28 * intensity;
+  const inner = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+  inner.addColorStop(0, `rgba(255, 255, 200, ${0.95 * intensity})`);
+  inner.addColorStop(0.25, `rgba(255, 230, 120, ${0.85 * intensity})`);
+  inner.addColorStop(0.6, `rgba(255, 160, 30, ${0.6 * intensity})`);
+  inner.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = inner;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, innerR, innerR * 0.65, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+// ============================================================
+// MAIN SCENE — all phases driven by scroll progress 0–1
+// ============================================================
 function drawScene(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
@@ -29,290 +354,145 @@ function drawScene(
   ctx.clearRect(0, 0, w, h);
   if (progress <= 0.01) return;
 
-  const rand = seededRandom(Math.floor(time) + 1000);
-
-  // === COORDINATES ===
-  const bucketX = w * 0.88;
-  const bucketY = h * 0.25;
-  const poolX = w * 0.58;
-  const poolY = h * 0.82;
-
-  // Compute pour lip in world coords based on bucket rotation
-  const bucketAngle = -0.6 - (progress < 0.12 ? 0 : Math.min(1, (progress - 0.12) / 0.12)) * 0.4;
-  const bw = 150, lipLocalX = -bw / 2 - 4, lipLocalY = -185 / 2;
-  const bxAnim = bucketX + (1 - Math.min(1, progress / 0.2)) * 300;
-  const pourLipX = bxAnim + lipLocalX * Math.cos(bucketAngle) - lipLocalY * Math.sin(bucketAngle);
-  const pourLipY = bucketY + lipLocalX * Math.sin(bucketAngle) + lipLocalY * Math.cos(bucketAngle);
+  // === LAYOUT ANCHORS ===
+  // Anvil centered in right 55% of canvas
+  const anvilCX = w * 0.68;
+  const anvilTopY = h * 0.52; // y of anvil top face (center of canvas vertically)
+  const hammerCX = anvilCX - 10; // hammer slightly left of anvil center (more natural)
 
   // === PHASE CALCULATIONS ===
-  const bucketIn = Math.min(1, progress / 0.2);
-  const tilt = progress < 0.12 ? 0 : Math.min(1, (progress - 0.12) / 0.12);
-  const pourFlow = progress < 0.18 ? 0 : progress > 0.68 ? Math.max(0, 1 - (progress - 0.68) / 0.08) : Math.min(1, (progress - 0.18) / 0.1);
-  const poolGrow = progress < 0.25 ? 0 : progress > 0.68 ? Math.max(0, 1 - (progress - 0.68) / 0.12) : Math.min(1, (progress - 0.25) / 0.15);
-  const fade = progress > 0.78 ? Math.max(0, 1 - (progress - 0.78) / 0.15) : 1;
+  // 0.00–0.15: anvil fades in
+  const anvilAlpha = progress < 0.15
+    ? Math.min(1, progress / 0.15)
+    : progress > 0.85 ? Math.max(0, 1 - (progress - 0.85) / 0.15) : 1;
 
-  ctx.globalAlpha = fade;
+  const anvilScale = progress < 0.15
+    ? 0.88 + (progress / 0.15) * 0.12
+    : 1.0;
 
-  // ============================================
-  // AMBIENT GROUND GLOW (draw first, behind everything)
-  // ============================================
-  if (poolGrow > 0) {
-    const ambientR = w * 0.4 * poolGrow;
-    const ambient = ctx.createRadialGradient(poolX, poolY, 0, poolX, poolY, ambientR);
-    ambient.addColorStop(0, `rgba(255, 120, 20, ${0.12 * poolGrow})`);
-    ambient.addColorStop(0.4, `rgba(200, 60, 5, ${0.06 * poolGrow})`);
+  // 0.15–0.35: hammer descends from above
+  const hammerAppear = progress < 0.15 ? 0 : Math.min(1, (progress - 0.15) / 0.20);
+
+  // Hammer Y: starts high (off-screen top), descends to just above anvil face
+  // Rest position = 80px above anvil face; strike = flush with anvil face
+  const hammerRestOffset = 80;  // px above anvil face when at rest
+  const hammerHeadH = 55;
+
+  // 0.35–0.50: first strike — hammer slams down
+  const strike1 = progress < 0.35 ? 0 : Math.min(1, (progress - 0.35) / 0.08);
+  // 0.50–0.70: hammer lifts back up
+  const lift1 = progress < 0.50 ? 0 : Math.min(1, (progress - 0.50) / 0.15);
+  // 0.70–0.85: second strike
+  const strike2 = progress < 0.70 ? 0 : Math.min(1, (progress - 0.70) / 0.08);
+  // 0.85–1.0: hammer lifts and fades
+  const lift2 = progress < 0.85 ? 0 : Math.min(1, (progress - 0.85) / 0.15);
+
+  // Hammer bottom Y (= impact face position)
+  let hammerY: number;
+  if (hammerAppear < 1) {
+    // Descending phase: hammer comes down from h*-0.1 to rest position
+    const startY = anvilTopY - hammerRestOffset - hammerHeadH - 300;
+    const endY = anvilTopY - hammerRestOffset;
+    hammerY = startY + (endY - startY) * hammerAppear;
+  } else if (strike1 < 1) {
+    // First strike descend — eases in quickly
+    const ease = 1 - Math.pow(1 - strike1, 3);
+    hammerY = (anvilTopY - hammerRestOffset) + hammerRestOffset * ease;
+  } else if (lift1 < 1) {
+    // Lift back up after first strike
+    const ease = Math.pow(lift1, 2);
+    hammerY = anvilTopY - hammerRestOffset * 0.6 * ease;
+  } else if (strike2 < 1) {
+    // Second strike
+    const ease = 1 - Math.pow(1 - strike2, 3);
+    const startY2 = anvilTopY - hammerRestOffset * 0.4;
+    hammerY = startY2 + (anvilTopY - startY2) * ease;
+  } else {
+    // Lift after second strike
+    const ease = Math.pow(lift2, 2);
+    hammerY = anvilTopY - hammerRestOffset * ease;
+  }
+
+  // Clamp hammer so it never goes below anvil face
+  hammerY = Math.min(hammerY, anvilTopY);
+
+  // === STRIKE GLOW ===
+  // Glow intensity spikes at strike moments and decays
+  let glowIntensity = 0;
+  if (strike1 >= 0.9 && lift1 < 0.5) {
+    // Peak at strike1=1, decay during lift
+    glowIntensity = Math.max(0, 1 - lift1 * 2.5);
+  }
+  if (strike2 >= 0.9 && lift2 < 0.5) {
+    const g2 = Math.max(0, 1 - lift2 * 2.5);
+    glowIntensity = Math.max(glowIntensity, g2 * 1.2); // second strike hotter
+  }
+  glowIntensity = Math.min(1, glowIntensity);
+
+  // === AMBIENT GLOW (faint, always when anvil visible) ===
+  if (anvilAlpha > 0 && glowIntensity > 0) {
+    const ambientR = w * 0.35 * glowIntensity;
+    const ambient = ctx.createRadialGradient(anvilCX, anvilTopY, 0, anvilCX, anvilTopY, ambientR);
+    ambient.addColorStop(0, `rgba(255, 120, 20, ${0.12 * glowIntensity * anvilAlpha})`);
+    ambient.addColorStop(0.5, `rgba(200, 60, 5, ${0.06 * glowIntensity * anvilAlpha})`);
     ambient.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = ambient;
     ctx.fillRect(0, 0, w, h);
   }
 
-  // ============================================
-  // MOLTEN POOL — layered for realism
-  // ============================================
-  if (poolGrow > 0) {
-    const pw = 140 + poolGrow * 200;
-    const ph = 28 + poolGrow * 50;
+  // === DRAW ANVIL ===
+  drawAnvil(ctx, anvilCX, anvilTopY, 1.0, anvilAlpha);
 
-    // 1. Ground reflection/heat haze (wide, subtle)
-    ctx.save();
-    ctx.shadowBlur = 100 * poolGrow;
-    ctx.shadowColor = 'rgba(200, 60, 0, 0.25)';
-    const haze = ctx.createRadialGradient(poolX, poolY + ph * 0.3, 0, poolX, poolY, pw * 1.6);
-    haze.addColorStop(0, `rgba(120, 40, 0, ${0.25 * poolGrow})`);
-    haze.addColorStop(0.5, `rgba(80, 20, 0, ${0.12 * poolGrow})`);
-    haze.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.beginPath();
-    ctx.ellipse(poolX, poolY + ph * 0.3, pw * 1.6, ph * 3, 0, 0, Math.PI * 2);
-    ctx.fillStyle = haze;
-    ctx.fill();
-    ctx.restore();
+  // === DRAW STRIKE GLOW (on top of anvil face) ===
+  drawStrikeGlow(ctx, anvilCX - 10, anvilTopY + 2, glowIntensity * anvilAlpha);
 
-    // 2. Dark outer crust ring
-    ctx.beginPath();
-    ctx.ellipse(poolX, poolY, pw * 1.15, ph * 1.35, 0, 0, Math.PI * 2);
-    const crustGrad = ctx.createRadialGradient(poolX, poolY, pw * 0.6, poolX, poolY, pw * 1.15);
-    crustGrad.addColorStop(0, `rgba(180, 70, 5, ${0.6 * poolGrow})`);
-    crustGrad.addColorStop(0.5, `rgba(100, 30, 0, ${0.5 * poolGrow})`);
-    crustGrad.addColorStop(0.8, `rgba(50, 15, 0, ${0.3 * poolGrow})`);
-    crustGrad.addColorStop(1, `rgba(20, 5, 0, ${0.1 * poolGrow})`);
-    ctx.fillStyle = crustGrad;
-    ctx.fill();
+  // === SPAWN SPARKS ===
+  const isStriking1 = strike1 > 0.85 && lift1 < 0.3;
+  const isStriking2 = strike2 > 0.85 && lift2 < 0.35;
 
-    // 3. Main molten body
-    ctx.save();
-    ctx.shadowBlur = 50 * poolGrow;
-    ctx.shadowColor = 'rgba(255, 120, 10, 0.5)';
-    ctx.beginPath();
-    ctx.ellipse(poolX, poolY, pw, ph, 0, 0, Math.PI * 2);
-    const poolGrad = ctx.createRadialGradient(poolX, poolY - ph * 0.15, pw * 0.1, poolX, poolY, pw);
-    poolGrad.addColorStop(0, `rgba(255, 240, 130, ${0.95 * poolGrow})`);
-    poolGrad.addColorStop(0.12, `rgba(255, 210, 60, ${0.92 * poolGrow})`);
-    poolGrad.addColorStop(0.3, `rgba(255, 160, 25, ${0.88 * poolGrow})`);
-    poolGrad.addColorStop(0.55, `rgba(230, 100, 8, ${0.8 * poolGrow})`);
-    poolGrad.addColorStop(0.8, `rgba(180, 55, 0, ${0.6 * poolGrow})`);
-    poolGrad.addColorStop(1, `rgba(120, 30, 0, ${0.35 * poolGrow})`);
-    ctx.fillStyle = poolGrad;
-    ctx.fill();
-    ctx.restore();
+  if ((isStriking1 || isStriking2) && time % 2 === 0) {
+    const burstCount = isStriking2 ? 8 : 5; // second strike bigger
+    const impactX = anvilCX - 10;
+    const impactY = anvilTopY;
 
-    // 4. Animated concentric cooling rings
-    for (let i = 1; i <= 5; i++) {
-      const rippleR = pw * (0.2 + i * 0.17) + Math.sin(time * 0.03 + i * 1.5) * 4;
-      const rippleH = ph * (0.5 + i * 0.12) + Math.cos(time * 0.025 + i) * 2;
-      ctx.beginPath();
-      ctx.ellipse(poolX, poolY, rippleR, rippleH, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(255, 160, 30, ${0.08 * poolGrow * (1 - i * 0.15)})`;
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-    }
-
-    // 6. White-hot impact center (where stream hits)
-    ctx.save();
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = 'rgba(255, 255, 180, 0.7)';
-    ctx.beginPath();
-    ctx.ellipse(poolX, poolY - ph * 0.1, pw * 0.12, ph * 0.3, 0, 0, Math.PI * 2);
-    const hotGrad = ctx.createRadialGradient(poolX, poolY - ph * 0.1, 0, poolX, poolY - ph * 0.1, pw * 0.12);
-    hotGrad.addColorStop(0, `rgba(255, 255, 240, ${0.9 * poolGrow})`);
-    hotGrad.addColorStop(0.5, `rgba(255, 240, 160, ${0.6 * poolGrow})`);
-    hotGrad.addColorStop(1, `rgba(255, 200, 60, ${0.2 * poolGrow})`);
-    ctx.fillStyle = hotGrad;
-    ctx.fill();
-    ctx.restore();
-
-    // 7. Bright rim highlight on the near edge (3D depth cue)
-    ctx.beginPath();
-    ctx.ellipse(poolX, poolY, pw, ph, 0, Math.PI * 0.05, Math.PI * 0.95);
-    ctx.strokeStyle = `rgba(255, 200, 80, ${0.12 * poolGrow})`;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  // ============================================
-  // MOLTEN STREAM
-  // ============================================
-  if (pourFlow > 0) {
-    const streamStartX = pourLipX + (1 - bucketIn) * 200;
-    const streamStartY = pourLipY;
-
-    // Draw stream as a thick band with turbulent edges
-    // Multiple passes: dark outer → bright middle → white core
-    const steps = 60;
-    for (let pass = 0; pass < 3; pass++) {
-      const widthMult = pass === 0 ? 1.0 : pass === 1 ? 0.6 : 0.25;
-      const alpha = pass === 0 ? 0.7 : pass === 1 ? 0.85 : 0.9;
-
-      ctx.save();
-      if (pass === 2) {
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = 'rgba(255, 200, 50, 0.5)';
-      }
-
-      ctx.beginPath();
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        if (t > pourFlow) break;
-
-        // Bezier interpolation for stream path
-        const cx = (streamStartX + poolX) / 2 + Math.sin(time * 0.03 + t * 5) * 8 * t;
-        const cy = streamStartY + (poolY - streamStartY) * 0.4;
-        const px = (1 - t) * (1 - t) * streamStartX + 2 * (1 - t) * t * cx + t * t * poolX;
-        const py = (1 - t) * (1 - t) * streamStartY + 2 * (1 - t) * t * cy + t * t * (poolY - 10);
-
-        // Stream width: wide at top, thins, wide at splash
-        let streamW;
-        if (t < 0.1) {
-          streamW = 14 + (1 - t / 0.1) * 6; // wide at lip
-        } else if (t > 0.85) {
-          streamW = 8 + (t - 0.85) / 0.15 * 20; // splash spread
-        } else {
-          streamW = 7 + Math.sin(t * 12 + time * 0.05) * 2; // slight turbulence
-        }
-        streamW *= widthMult;
-
-        // Turbulent edge noise
-        const noise = Math.sin(t * 20 + time * 0.08) * 2 * t;
-
-        if (i === 0) {
-          ctx.moveTo(px + noise, py);
-        } else {
-          ctx.lineTo(px + noise, py);
-        }
-      }
-      // Draw return path (other side of stream) for filled shape
-      for (let i = Math.min(steps, Math.floor(pourFlow * steps)); i >= 0; i--) {
-        const t = i / steps;
-        const cx = (streamStartX + poolX) / 2 + Math.sin(time * 0.03 + t * 5) * 8 * t;
-        const cy = streamStartY + (poolY - streamStartY) * 0.4;
-        const px = (1 - t) * (1 - t) * streamStartX + 2 * (1 - t) * t * cx + t * t * poolX;
-        const py = (1 - t) * (1 - t) * streamStartY + 2 * (1 - t) * t * cy + t * t * (poolY - 10);
-
-        let streamW;
-        if (t < 0.1) streamW = 14 + (1 - t / 0.1) * 6;
-        else if (t > 0.85) streamW = 8 + (t - 0.85) / 0.15 * 20;
-        else streamW = 7 + Math.sin(t * 12 + time * 0.05) * 2;
-        streamW *= widthMult;
-
-        const noise = Math.sin(t * 20 + time * 0.08 + 2) * 2 * t;
-        ctx.lineTo(px + streamW + noise, py);
-      }
-      ctx.closePath();
-
-      // Color per pass
-      if (pass === 0) {
-        const g = ctx.createLinearGradient(streamStartX, streamStartY, poolX, poolY);
-        g.addColorStop(0, `rgba(255, 160, 20, ${alpha * pourFlow})`);
-        g.addColorStop(0.5, `rgba(240, 120, 10, ${alpha * pourFlow})`);
-        g.addColorStop(1, `rgba(255, 140, 20, ${alpha * pourFlow})`);
-        ctx.fillStyle = g;
-      } else if (pass === 1) {
-        const g = ctx.createLinearGradient(streamStartX, streamStartY, poolX, poolY);
-        g.addColorStop(0, `rgba(255, 220, 80, ${alpha * pourFlow})`);
-        g.addColorStop(0.5, `rgba(255, 180, 40, ${alpha * pourFlow})`);
-        g.addColorStop(1, `rgba(255, 200, 60, ${alpha * pourFlow})`);
-        ctx.fillStyle = g;
-      } else {
-        const g = ctx.createLinearGradient(streamStartX, streamStartY, poolX, poolY);
-        g.addColorStop(0, `rgba(255, 255, 200, ${alpha * pourFlow})`);
-        g.addColorStop(0.3, `rgba(255, 240, 140, ${alpha * pourFlow * 0.8})`);
-        g.addColorStop(1, `rgba(255, 255, 180, ${alpha * pourFlow * 0.6})`);
-        ctx.fillStyle = g;
-      }
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Stream glow line (center bright line)
-    ctx.save();
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = 'rgba(255, 220, 100, 0.6)';
-    ctx.beginPath();
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      if (t > pourFlow) break;
-      const cx = (streamStartX + poolX) / 2 + Math.sin(time * 0.03 + t * 5) * 8 * t;
-      const cy = streamStartY + (poolY - streamStartY) * 0.4;
-      const px = (1 - t) * (1 - t) * streamStartX + 2 * (1 - t) * t * cx + t * t * poolX;
-      const py = (1 - t) * (1 - t) * streamStartY + 2 * (1 - t) * t * cy + t * t * (poolY - 10);
-      if (i === 0) ctx.moveTo(px + 5, py);
-      else ctx.lineTo(px + 5, py);
-    }
-    ctx.strokeStyle = `rgba(255, 255, 220, ${0.5 * pourFlow})`;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // ============================================
-  // SPARKS (flying off stream + impact)
-  // ============================================
-  if (pourFlow > 0.3) {
-    // Spawn new sparks
-    if (time % 2 === 0) {
-      const spawnCount = 2 + Math.floor(rand() * 3);
-      for (let i = 0; i < spawnCount; i++) {
-        // Spawn along the stream
-        const t = 0.3 + rand() * 0.6;
-        const cx = (pourLipX + poolX) / 2;
-        const cy = pourLipY + (poolY - pourLipY) * 0.4;
-        const sx = (1 - t) * (1 - t) * pourLipX + 2 * (1 - t) * t * cx + t * t * poolX;
-        const sy = (1 - t) * (1 - t) * pourLipY + 2 * (1 - t) * t * cy + t * t * (poolY - 10);
-
-        sparks.push({
-          x: sx + (rand() - 0.5) * 20,
-          y: sy + (rand() - 0.5) * 10,
-          vx: (rand() - 0.5) * 4,
-          vy: -(1 + rand() * 4),
-          life: 0.6 + rand() * 0.5,
-          size: 1 + rand() * 2.5,
-          brightness: 0.6 + rand() * 0.4,
-        });
-      }
-      // Impact sparks
-      if (poolGrow > 0.2) {
-        for (let i = 0; i < 2; i++) {
-          sparks.push({
-            x: poolX + (rand() - 0.5) * 40,
-            y: poolY - 10,
-            vx: (rand() - 0.5) * 6,
-            vy: -(3 + rand() * 5),
-            life: 0.5 + rand() * 0.4,
-            size: 1.5 + rand() * 2,
-            brightness: 0.8 + rand() * 0.2,
-          });
-        }
-      }
+    for (let i = 0; i < burstCount; i++) {
+      // Sparks fan out in all directions from impact point
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.5 + Math.random() * 5.5;
+      sparks.push({
+        x: impactX + (Math.random() - 0.5) * 12,
+        y: impactY - 4,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2.5, // bias upward
+        life: 0.55 + Math.random() * 0.5,
+        size: 1.2 + Math.random() * 2.8,
+        brightness: 0.6 + Math.random() * 0.4,
+      });
     }
   }
 
-  // Update and draw sparks
+  // Trickle sparks while glow is active (cooling phase)
+  if (glowIntensity > 0.2 && time % 4 === 0) {
+    const impactX = anvilCX - 10;
+    sparks.push({
+      x: impactX + (Math.random() - 0.5) * 20,
+      y: anvilTopY - 2,
+      vx: (Math.random() - 0.5) * 3,
+      vy: -(1.5 + Math.random() * 2.5),
+      life: 0.4 + Math.random() * 0.35,
+      size: 0.8 + Math.random() * 1.6,
+      brightness: 0.5 + Math.random() * 0.4,
+    });
+  }
+
+  // === UPDATE & DRAW SPARKS ===
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
     s.x += s.vx;
     s.y += s.vy;
-    s.vy += 0.12;
-    s.vx *= 0.99;
-    s.life -= 0.025;
+    s.vy += 0.14;   // gravity
+    s.vx *= 0.98;   // drag
+    s.life -= 0.022;
     if (s.life <= 0) { sparks.splice(i, 1); continue; }
 
     ctx.save();
@@ -332,130 +512,13 @@ function drawScene(
     ctx.restore();
   }
 
-  // ============================================
-  // BUCKET (drawn on top of everything)
-  // ============================================
-  if (bucketIn > 0) {
-    ctx.save();
-    const bx = bucketX + (1 - bucketIn) * 300; // slides in from right
-    const by = bucketY;
-    ctx.translate(bx, by);
-    ctx.rotate(-0.6 - tilt * 0.4); // tilt to pour left
-
-    const bw = 150, bh = 185; // much bigger bucket
-    const topW = bw, botW = bw * 0.75;
-
-    // Bucket shadow
-    ctx.save();
-    ctx.shadowBlur = 30;
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-
-    // Main body — cylindrical bucket shape
-    ctx.beginPath();
-    ctx.moveTo(-topW / 2, -bh / 2);
-    ctx.lineTo(topW / 2, -bh / 2);
-    ctx.lineTo(botW / 2, bh / 2);
-    ctx.lineTo(-botW / 2, bh / 2);
-    ctx.closePath();
-
-    // Dark steel/iron gradient
-    const bucketGrad = ctx.createLinearGradient(-topW / 2, 0, topW / 2, 0);
-    bucketGrad.addColorStop(0, '#2A2A2E');
-    bucketGrad.addColorStop(0.2, '#3D3D42');
-    bucketGrad.addColorStop(0.5, '#4A4A50');
-    bucketGrad.addColorStop(0.8, '#3A3A40');
-    bucketGrad.addColorStop(1, '#252528');
-    ctx.fillStyle = bucketGrad;
-    ctx.fill();
-    ctx.restore();
-
-    // Rust/wear patches
-    const patchRand = seededRandom(99);
-    for (let i = 0; i < 12; i++) {
-      const px = (patchRand() - 0.5) * topW * 0.7;
-      const py = (patchRand() - 0.5) * bh * 0.7;
-      const ps = 4 + patchRand() * 12;
-      ctx.beginPath();
-      ctx.arc(px, py, ps, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${70 + patchRand() * 40}, ${35 + patchRand() * 20}, ${15 + patchRand() * 10}, ${0.2 + patchRand() * 0.15})`;
-      ctx.fill();
-    }
-
-    // Metal bands
-    for (const bandY of [-bh * 0.3, 0, bh * 0.3]) {
-      const bandW = topW / 2 + (botW / 2 - topW / 2) * ((bandY + bh / 2) / bh);
-      ctx.beginPath();
-      ctx.rect(-bandW - 1, bandY - 3, (bandW + 1) * 2, 6);
-      ctx.fillStyle = '#35353A';
-      ctx.fill();
-      // Band highlight
-      ctx.beginPath();
-      ctx.moveTo(-bandW, bandY - 2);
-      ctx.lineTo(bandW, bandY - 2);
-      ctx.strokeStyle = 'rgba(120, 120, 130, 0.25)';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-
-    // Rivets on bands
-    const rivetRand = seededRandom(55);
-    for (const bandY of [-bh * 0.3, 0, bh * 0.3]) {
-      for (let r = 0; r < 3; r++) {
-        const rx = -30 + r * 30 + (rivetRand() - 0.5) * 5;
-        ctx.beginPath();
-        ctx.arc(rx, bandY, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#555558';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(rx - 0.5, bandY - 0.5, 1, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(180,180,185,0.2)';
-        ctx.fill();
-      }
-    }
-
-    // Rim
-    ctx.beginPath();
-    ctx.rect(-topW / 2 - 4, -bh / 2 - 8, topW + 8, 10);
-    const rimGrad = ctx.createLinearGradient(0, -bh / 2 - 8, 0, -bh / 2 + 2);
-    rimGrad.addColorStop(0, '#4A4A50');
-    rimGrad.addColorStop(0.5, '#3A3A40');
-    rimGrad.addColorStop(1, '#2A2A2E');
-    ctx.fillStyle = rimGrad;
-    ctx.fill();
-
-    // Subtle warm glow at the rim edge only (not a full oval)
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(-topW / 2, -bh / 2);
-    ctx.lineTo(topW / 2, -bh / 2);
-    ctx.lineTo(topW / 2, -bh / 2 + 8);
-    ctx.lineTo(-topW / 2, -bh / 2 + 8);
-    ctx.closePath();
-    ctx.clip();
-    const rimGlow = ctx.createLinearGradient(-topW / 2, -bh / 2, -topW / 2, -bh / 2 + 10);
-    rimGlow.addColorStop(0, 'rgba(255, 180, 40, 0.5)');
-    rimGlow.addColorStop(1, 'rgba(255, 120, 0, 0)');
-    ctx.fillStyle = rimGlow;
-    ctx.fillRect(-topW / 2, -bh / 2, topW, 10);
-    ctx.restore();
-
-    // Handle — bigger
-    ctx.beginPath();
-    ctx.arc(0, -bh / 2 - 30, 55, Math.PI * 0.18, Math.PI * 0.82);
-    ctx.strokeStyle = '#3A3A40';
-    ctx.lineWidth = 8;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, -bh / 2 - 30, 55, Math.PI * 0.22, Math.PI * 0.78);
-    ctx.strokeStyle = 'rgba(100,100,108,0.3)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    ctx.restore();
+  // === DRAW HAMMER (on top of sparks) ===
+  if (hammerAppear > 0) {
+    const hammerAlpha = progress > 0.85
+      ? Math.max(0, 1 - (progress - 0.85) / 0.15) * anvilAlpha
+      : hammerAppear;
+    drawHammer(ctx, hammerCX, hammerY, hammerAlpha);
   }
-
-  ctx.globalAlpha = 1;
 }
 
 export function IronAnvilSection() {
@@ -566,8 +629,7 @@ export function IronAnvilSection() {
 
         {/* Canvas — right side.
             Mobile: reduced opacity so it reads as a background texture behind the text,
-            not a competing element. The bucket animation renders at w*0.88 in canvas coords,
-            which on mobile (canvas = full viewport width) places it correctly near the right edge.
+            not a competing element.
             lg+: back to full opacity, constrained to right 58%.
         */}
         <div className="absolute right-0 top-0 bottom-0 w-full lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100">

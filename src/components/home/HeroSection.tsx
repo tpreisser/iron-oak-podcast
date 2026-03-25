@@ -41,7 +41,7 @@ export function HeroSection() {
             </h1>
 
             <p className="text-[var(--text-secondary)] max-w-xl mb-6 md:mb-8 text-base md:text-xl mx-auto lg:mx-0">
-              Hard questions. Honest faith. No easy answers.
+              Two men from the Kansas plains digging into Scripture, doubt, and the questions that matter most.
             </p>
 
             {/* Email form: stacks vertically on mobile, side-by-side on sm+ */}
@@ -49,7 +49,7 @@ export function HeroSection() {
               <form className="flex flex-col sm:flex-row gap-2" onSubmit={(e) => e.preventDefault()}>
                 <input
                   type="email"
-                  placeholder="Enter your email for updates"
+                  placeholder="Be the first to hear new episodes"
                   className="flex-1 h-12 px-5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300 text-sm"
                 />
                 {/* min-h-12 ensures 48px tap target on mobile */}
@@ -66,7 +66,7 @@ export function HeroSection() {
           {/* Logo — right side; smaller on mobile to not crowd text */}
           <div className="hero-logo flex-shrink-0">
             <Image
-              src={assetPath("/images/iron-oak-logo.webp")}
+              src={assetPath("/images/iron-oak-logo-new.webp")}
               alt="The Iron & Oak Podcast"
               width={400}
               height={400}
