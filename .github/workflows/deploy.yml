@@ -18,8 +18,6 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npx next build
-      - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy out --project-name=iron-oak-podcast
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Deploy handled manually via wrangler CLI for now
+      - name: Build complete
+        run: echo "Build successful — deploy via wrangler CLI"
