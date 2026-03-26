@@ -76,18 +76,21 @@ export function HeroSection() {
                     name="name"
                     required
                     placeholder="First name"
-                    className="sm:w-[140px] h-12 px-5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300 text-sm"
+                    /* w-full on mobile so it doesn't shrink to fit next to other inputs */
+                    className="w-full sm:w-[140px] h-12 px-5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300 text-base sm:text-sm"
                   />
                   <input
                     type="email"
                     name="email"
                     required
                     placeholder="Email address"
-                    className="flex-1 h-12 px-5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300 text-sm"
+                    /* text-base (16px) prevents iOS Safari auto-zoom on focus */
+                    className="w-full sm:flex-1 h-12 px-5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300 text-base sm:text-sm"
                   />
+                  {/* w-full on mobile — full-width tap target; min-h-[48px] ensures 48px tap size */}
                   <button
                     type="submit"
-                    className="h-12 min-h-[48px] px-6 rounded-full bg-[var(--accent-oak)] text-white font-medium text-sm hover:bg-[var(--accent-oak-light)] transition-colors duration-300 active:scale-[0.97]"
+                    className="w-full sm:w-auto h-12 min-h-[48px] px-6 rounded-full bg-[var(--accent-oak)] text-white font-medium text-sm hover:bg-[var(--accent-oak-light)] transition-colors duration-300 active:scale-[0.97]"
                   >
                     Join
                   </button>

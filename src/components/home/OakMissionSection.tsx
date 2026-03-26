@@ -286,7 +286,9 @@ export function OakMissionSection() {
             On mobile: full-width with extra right padding so roots behind don't cover text.
             On lg+: 45% width, roots fill the right side.
         */}
-        <div ref={textRef} className="w-full lg:w-[45%] px-6 pr-8 sm:pr-6 lg:pl-12 xl:pl-20 relative z-10">
+        {/* Mobile: full-width, with generous right padding (pr-16 = 4rem) to keep text clear
+            of the partially-visible root canvas behind it. lg+: restores natural 45% column. */}
+        <div ref={textRef} className="w-full lg:w-[45%] px-6 pr-16 sm:pr-8 lg:pr-6 lg:pl-12 xl:pl-20 relative z-10">
           <span className="mission-text-item block font-[family-name:var(--font-accent)] text-sm tracking-[0.2em] uppercase text-[var(--accent-oak)] mb-4 opacity-0">
             Our Mission
           </span>

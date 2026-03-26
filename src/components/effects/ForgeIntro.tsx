@@ -220,7 +220,9 @@ export function ForgeIntro() {
           alt="The Iron & Oak Podcast"
           width={500}
           height={500}
-          className="w-[250px] md:w-[350px] lg:w-[420px] h-auto"
+          /* w-[min(200px,60vw)] on tiny phones (320px → 192px; 375px → 200px),
+             stepping up through breakpoints. 60vw keeps it off the edges on any width. */
+          className="w-[min(200px,60vw)] sm:w-[250px] md:w-[350px] lg:w-[420px] h-auto"
           priority
         />
       </div>

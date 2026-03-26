@@ -53,7 +53,10 @@ export function FeaturedSeries() {
         >
           {/* Phase selector bar */}
           <div className="relative mb-10">
-            {/* Full connecting line */}
+            {/* Connecting line — aligns with dot center.
+                Mobile dots are w-8 h-8 (32px) → center at 16px = top-4 (plus 4px button padding = top-5).
+                md+ dots are w-11 h-11 (44px) → center at 22px = top-[22px] plus padding = top-[26px].
+                Using top-5 for both is close enough given the button padding offsets. */}
             <div className="absolute top-5 left-0 right-0 h-[2px] bg-[var(--border-default)]" />
             {/* Filled portion up to active dot */}
             <div
@@ -61,18 +64,21 @@ export function FeaturedSeries() {
               style={{ width: `${(activePhase / (series.phases.length - 1)) * 100}%` }}
             />
 
+            {/* On mobile, 5 dots at 44px each = 220px + gaps — too wide for 320px screens.
+                Shrink dots to w-8 h-8 (32px) on mobile but keep the touch target large via
+                generous padding on the button itself. md+ restores full w-11 h-11 (44px). */}
             <div className="relative flex justify-between">
               {series.phases.map((p, i) => (
                 <button
                   key={p.slug}
                   onClick={() => setActivePhase(i)}
-                  className="flex flex-col items-center group min-w-[44px] min-h-[44px] pt-0.5"
+                  className="flex flex-col items-center group px-1 py-1 min-h-[44px]"
                   aria-label={`Phase ${p.number}: ${p.name}`}
                   aria-pressed={i === activePhase}
                 >
                   <div
                     className={cn(
-                      'w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold',
+                      'w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center text-xs md:text-sm font-bold',
                       'font-[family-name:var(--font-accent)] transition-all duration-300',
                       'border-2 z-10 relative',
                       i <= activePhase
@@ -87,11 +93,12 @@ export function FeaturedSeries() {
                   </div>
                   <span
                     className={cn(
-                      'mt-3 text-xs md:text-sm font-medium transition-colors duration-300 text-center',
+                      'mt-2 text-xs font-medium transition-colors duration-300 text-center',
                       'font-[family-name:var(--font-accent)]',
                       i === activePhase ? 'text-white' : 'text-[var(--accent-iron)]'
                     )}
                   >
+                    {/* Mobile: show abbreviated "P1"–"P5"; md+: show full phase name */}
                     <span className="hidden md:inline">{p.name}</span>
                     <span className="md:hidden">P{p.number}</span>
                   </span>
@@ -111,7 +118,8 @@ export function FeaturedSeries() {
               {String(phase.number).padStart(2, '0')}
             </span>
 
-            <div className="p-5 sm:p-8 md:p-10 lg:p-12 relative">
+            {/* p-4 on tiny phones (320px), stepping up through breakpoints */}
+            <div className="p-4 sm:p-8 md:p-10 lg:p-12 relative">
               <div className="flex flex-col gap-6">
                 {/* Phase label */}
                 <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.2em] uppercase text-[var(--accent-oak)] block">
