@@ -229,50 +229,39 @@ export function OakMissionSection() {
     };
   }, []);
 
-  // Scroll-driven roots progress — passive scroll listener, no JS pinning
+  // Scroll-driven: roots progress + text/canvas fade in AND fade out
   useEffect(() => {
+    const section = sectionRef.current;
+    const textEl = textRef.current;
+    const canvasWrap = canvasRef.current?.parentElement?.parentElement;
+    if (!section) return;
+
     const handleScroll = () => {
-      const section = sectionRef.current;
-      if (!section) return;
       const rect = section.getBoundingClientRect();
       const vh = window.innerHeight;
-      // progress: 0 when section top hits viewport top, 1 when section bottom hits viewport bottom
       const scrollable = rect.height - vh;
       if (scrollable <= 0) return;
       const progress = Math.max(0, Math.min(1, -rect.top / scrollable));
       progressRef.current = progress;
+
+      // Fade in during 0-30%, hold 30-70%, fade out 70-100%
+      let opacity = 0;
+      if (progress < 0.30) {
+        opacity = progress / 0.30;
+      } else if (progress < 0.70) {
+        opacity = 1;
+      } else {
+        opacity = 1 - (progress - 0.70) / 0.30;
+      }
+      opacity = Math.max(0, Math.min(1, opacity));
+
+      if (textEl) textEl.style.opacity = String(opacity);
+      if (canvasWrap) (canvasWrap as HTMLElement).style.opacity = String(opacity);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    // Compute initial value in case page loads mid-scroll
     handleScroll();
-
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Text fade-in — IntersectionObserver triggers once on enter
-  useEffect(() => {
-    const section = sectionRef.current;
-    const textEls = textRef.current?.querySelectorAll('.mission-text-item');
-    if (!section || !textEls || textEls.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          textEls.forEach((el, i) => {
-            setTimeout(() => {
-              (el as HTMLElement).style.opacity = '1';
-              (el as HTMLElement).style.transform = 'translateX(0)';
-            }, i * 150);
-          });
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    observer.observe(section);
-    return () => observer.disconnect();
   }, []);
 
   return (
@@ -304,26 +293,26 @@ export function OakMissionSection() {
         <div ref={textRef} className="w-full lg:w-[45%] px-6 pr-16 sm:pr-8 lg:pr-6 lg:pl-12 xl:pl-20 relative z-10">
           <span
             className="mission-text-item block font-[family-name:var(--font-accent)] text-sm tracking-[0.2em] uppercase text-[var(--accent-oak)] mb-4"
-            style={{ opacity: 0, transform: 'translateX(-1.5rem)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}
+            style={{}}
           >
             Our Mission
           </span>
           <h2
             className="mission-text-item font-[family-name:var(--font-display)] text-[var(--text-h1)] text-[var(--text-primary)] leading-tight mb-6"
-            style={{ opacity: 0, transform: 'translateX(-1.5rem)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}
+            style={{}}
           >
             What&apos;s Our Mission?
           </h2>
           {/* text-base on mobile (16px) — stays readable; text-lg on md+ */}
           <p
             className="mission-text-item text-base md:text-lg text-[var(--text-secondary)] leading-relaxed mb-4 max-w-lg"
-            style={{ opacity: 0, transform: 'translateX(-1.5rem)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}
+            style={{}}
           >
             To create a space where the hardest questions about faith aren&apos;t avoided — they&apos;re welcomed. Where Scripture is the foundation, not a prop. Where honesty matters more than polish.
           </p>
           <p
             className="mission-text-item text-base md:text-lg text-[var(--text-secondary)] leading-relaxed max-w-lg"
-            style={{ opacity: 0, transform: 'translateX(-1.5rem)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}
+            style={{}}
           >
             Iron &amp; Oak exists to sharpen believers and invite skeptics into the same conversation — one that doesn&apos;t flinch.
           </p>
