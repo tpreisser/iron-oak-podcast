@@ -669,7 +669,7 @@ export function IronAnvilSection() {
             Mobile: reduced opacity so it reads as a background texture behind the text.
             lg+: full opacity, constrained to right 58%.
         */}
-        <div className="absolute right-0 -top-[10%] lg:top-0 bottom-0 w-[70%] lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100 will-change-transform">
+        <div className="absolute right-0 -top-[80%] lg:top-0 bottom-0 w-[70%] lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100 will-change-transform">
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
       </div>
