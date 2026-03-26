@@ -25,15 +25,16 @@ export function Header() {
           ? 'backdrop-blur-[12px] bg-[var(--bg-primary)]/80 shadow-[0_1px_0_rgba(255,255,255,0.06)]'
           : 'bg-transparent'
       )}
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="container-default flex items-center h-18 lg:h-22">
+      <div className="container-default flex items-center h-14 sm:h-16 lg:h-20">
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <Image
             src={assetPath("/images/iron-oak-icon.webp")}
             alt="Iron & Oak"
             width={160}
             height={160}
-            className="w-16 h-16 lg:w-20 lg:h-20"
+            className="w-10 h-10 sm:w-14 sm:h-14 lg:w-18 lg:h-18"
           />
         </button>
       </div>
