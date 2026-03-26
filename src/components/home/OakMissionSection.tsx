@@ -242,8 +242,10 @@ export function OakMissionSection() {
         start: 'top top',
         end: '+=180%',
         pin: true,
-        pinType: 'transform',  // Use transform instead of position:fixed to avoid layout reflow on pin/unpin
-        scrub: 0.8,
+        pinType: 'transform',
+        pinSpacing: true,
+        scrub: true,  // instant scrub — no lag between scroll and animation
+        anticipatePin: 1,  // pre-pin 1px early to prevent jump
       },
     });
 
