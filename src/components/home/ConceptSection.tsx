@@ -56,7 +56,7 @@ export function ConceptSection() {
     <section
       ref={sectionRef}
       className="relative bg-[var(--bg-primary)]"
-      style={{ height: '140vh' }}
+      style={{ height: '110vh' }}
     >
       <div
         ref={contentRef}
