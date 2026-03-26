@@ -7,8 +7,11 @@ interface Spark {
   x: number; y: number;
   vx: number; vy: number;
   life: number;
+  maxLife: number;
   size: number;
   brightness: number;
+  type: 0 | 1 | 2;   // 0=large, 1=ember, 2=micro
+  trail: number;      // trail length in px
 }
 
 // ============================================================
@@ -33,29 +36,45 @@ function drawAnvil(
   // Drop shadow
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath();
-  ctx.ellipse(-30, 125, 110, 14, 0, 0, Math.PI * 2);
+  ctx.ellipse(-40, 115, 135, 14, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Main silhouette path (traced from reference image)
+  // ── Main silhouette path — clockwise from horn tip ─────────────
+  // Coordinate system: (0,0) = top of face at body center
+  // Total width ~350px: horn tip at x=-200, heel right at x=+120
+  // Total height ~105px: face at y≈0, base at y≈102
   ctx.beginPath();
-  ctx.moveTo(-180, 12);
-  ctx.bezierCurveTo(-120, -4, -30, -6, 75, -2);
-  ctx.bezierCurveTo(82, -1, 85, 8, 78, 22);
-  ctx.bezierCurveTo(65, 42, 48, 55, 38, 72);
-  ctx.bezierCurveTo(42, 78, 55, 82, 95, 85);
-  ctx.lineTo(95, 115);
-  ctx.bezierCurveTo(70, 115, 30, 80, 0, 78);
-  ctx.bezierCurveTo(-30, 80, -70, 115, -95, 115);
-  ctx.lineTo(-95, 85);
-  ctx.bezierCurveTo(-55, 82, -42, 78, -38, 72);
-  ctx.bezierCurveTo(-48, 55, -65, 42, -68, 22);
-  ctx.bezierCurveTo(-72, 28, -130, 30, -180, 12);
+  ctx.moveTo(-200, 8);                                          // horn tip
+
+  // Top face — nearly flat, very gentle rise to the right
+  ctx.quadraticCurveTo(-100, -3, 100, -2);                     // smooth flat top
+
+  // Heel — short vertical drop on right side
+  ctx.lineTo(105, 20);                                          // heel bottom
+
+  // Right waist — BIG smooth concave scoop down to base
+  ctx.bezierCurveTo(100, 40, 50, 62, 30, 65);                  // upper part of scoop
+  ctx.bezierCurveTo(45, 75, 90, 90, 120, 100);                 // lower part flaring to base
+
+  // Base bottom — wide, nearly flat with very subtle arch
+  ctx.lineTo(120, 102);                                         // right edge of base
+  ctx.quadraticCurveTo(0, 95, -120, 102);                      // subtle arch
+  ctx.lineTo(-120, 100);                                        // left edge of base
+
+  // Left waist — concave scoop back up (slightly less deep than right)
+  ctx.bezierCurveTo(-90, 90, -55, 75, -40, 65);                // lower flare from base
+  ctx.bezierCurveTo(-55, 55, -65, 35, -55, 22);                // upper scoop
+
+  // Horn underside — sweeps from body out to horn tip
+  ctx.bezierCurveTo(-70, 28, -140, 22, -200, 8);               // taper to horn tip
+
   ctx.closePath();
 
-  const bodyGrad = ctx.createLinearGradient(-180, 0, 85, 0);
+  const bodyGrad = ctx.createLinearGradient(-200, 0, 120, 0);
   bodyGrad.addColorStop(0,    '#161618');
-  bodyGrad.addColorStop(0.35, '#454558');
-  bodyGrad.addColorStop(0.55, '#585868');
+  bodyGrad.addColorStop(0.30, '#3A3A4A');
+  bodyGrad.addColorStop(0.50, '#525268');
+  bodyGrad.addColorStop(0.72, '#3E3E50');
   bodyGrad.addColorStop(0.90, '#2A2A38');
   bodyGrad.addColorStop(1,    '#1A1A22');
   ctx.fillStyle = bodyGrad;
@@ -63,33 +82,33 @@ function drawAnvil(
 
   // Face highlight strip along the flat working surface
   ctx.beginPath();
-  ctx.moveTo(-180, 12);
-  ctx.bezierCurveTo(-120, -4, -30, -6, 75, -2);
-  ctx.lineTo(75, 5);
-  ctx.bezierCurveTo(-30, 2, -120, 4, -180, 12);
+  ctx.moveTo(-200, 8);
+  ctx.quadraticCurveTo(-100, -3, 100, -2);
+  ctx.lineTo(100, 5);
+  ctx.quadraticCurveTo(-100, 4, -200, 8);
   ctx.closePath();
-  const faceHighlight = ctx.createLinearGradient(-180, 0, 75, 0);
+  const faceHighlight = ctx.createLinearGradient(-200, 0, 100, 0);
   faceHighlight.addColorStop(0,   'rgba(70,70,88,0)');
-  faceHighlight.addColorStop(0.5, 'rgba(115,115,138,0.7)');
+  faceHighlight.addColorStop(0.45, 'rgba(115,115,138,0.7)');
   faceHighlight.addColorStop(1,   'rgba(85,85,100,0.35)');
   ctx.fillStyle = faceHighlight;
   ctx.fill();
 
   // Specular top edge line
   ctx.beginPath();
-  ctx.moveTo(-170, 10);
-  ctx.bezierCurveTo(-115, -5, -25, -7, 74, -3);
+  ctx.moveTo(-190, 7);
+  ctx.quadraticCurveTo(-100, -4, 99, -3);
   ctx.strokeStyle = 'rgba(220,220,240,0.5)';
   ctx.lineWidth = 1.2;
   ctx.stroke();
 
   // Hardy hole (square) on the heel
   ctx.fillStyle = 'rgba(0,0,0,0.8)';
-  ctx.fillRect(46, 3, 10, 10);
+  ctx.fillRect(62, 3, 10, 10);
 
   // Pritchel hole (round) on the heel
   ctx.beginPath();
-  ctx.arc(64, 8, 4, 0, Math.PI * 2);
+  ctx.arc(82, 8, 4, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(0,0,0,0.75)';
   ctx.fill();
 
@@ -244,7 +263,11 @@ function drawStrikeGlow(
 }
 
 // ============================================================
-// SPARKS — update physics and render golden/copper particles
+// SPARKS — hyper-realistic forge spark physics and rendering
+//
+// type 0 = large bright sparks   (fast, far, white-yellow core, long trail)
+// type 1 = ember particles        (slow, floaty, orange-copper, medium trail)
+// type 2 = micro sparks           (very fast, very short life, yellow-white)
 // ============================================================
 function drawSparks(
   ctx: CanvasRenderingContext2D,
@@ -252,29 +275,143 @@ function drawSparks(
 ) {
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
-    s.x  += s.vx;
-    s.y  += s.vy;
-    s.vy += 0.15;
-    s.vx *= 0.97;
-    s.life -= 0.024;
+
+    // ── Physics — type-dependent drag and gravity ───────────────
+    if (s.type === 0) {
+      // Large sparks: low drag, normal gravity
+      s.x  += s.vx;
+      s.y  += s.vy;
+      s.vy += 0.18;
+      s.vx *= 0.985;
+    } else if (s.type === 1) {
+      // Embers: high drag, reduced gravity, gentle horizontal wobble
+      s.x  += s.vx + Math.sin(s.life * 18 + s.brightness * 8) * 0.4;
+      s.y  += s.vy;
+      s.vy += 0.06;     // float more, fall slower
+      s.vx *= 0.96;
+    } else {
+      // Micro sparks: very low drag (fly far fast), slightly less gravity
+      s.x  += s.vx;
+      s.y  += s.vy;
+      s.vy += 0.14;
+      s.vx *= 0.99;
+    }
+
+    s.life -= s.type === 1 ? 0.016 : s.type === 0 ? 0.022 : 0.038;
     if (s.life <= 0) { sparks.splice(i, 1); continue; }
 
+    const lifeFrac = s.life / s.maxLife;   // 1 = brand new, 0 = dead
+
     ctx.save();
-    ctx.shadowBlur  = 7;
-    ctx.shadowColor = `rgba(255, 180, 40, ${s.life * 0.55})`;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
-    const r = 255;
-    const g = Math.round(180 + s.brightness * 75);
-    const b = Math.round(40  + s.brightness * 55);
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${s.life * 0.92})`;
-    ctx.fill();
-    if (s.life > 0.38) {
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.size * 0.28 * s.life, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 210, ${(s.life - 0.38) * 1.6})`;
-      ctx.fill();
+
+    // ── Motion trail — line drawn backward along velocity ──────
+    if (s.trail > 0 && (s.type === 0 || s.type === 2)) {
+      const speed  = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+      if (speed > 0.5) {
+        const nx     = -s.vx / speed;
+        const ny     = -s.vy / speed;
+        const tLen   = s.trail * lifeFrac;
+        const tx     = s.x + nx * tLen;
+        const ty     = s.y + ny * tLen;
+        const trailA = lifeFrac * (s.type === 0 ? 0.75 : 0.5);
+        const trailGrad = ctx.createLinearGradient(s.x, s.y, tx, ty);
+        if (s.type === 0) {
+          trailGrad.addColorStop(0, `rgba(255, 240, 180, ${trailA})`);
+        } else {
+          trailGrad.addColorStop(0, `rgba(255, 220, 80, ${trailA})`);
+        }
+        trailGrad.addColorStop(1, 'rgba(255, 120, 20, 0)');
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(tx, ty);
+        ctx.strokeStyle = trailGrad;
+        ctx.lineWidth   = s.size * lifeFrac * (s.type === 0 ? 1.0 : 0.6);
+        ctx.lineCap     = 'round';
+        ctx.stroke();
+      }
     }
+
+    // ── Ember type 1 — shorter, fatter trail (glow streak) ─────
+    if (s.type === 1 && s.trail > 0) {
+      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+      if (speed > 0.3) {
+        const nx = -s.vx / speed;
+        const ny = -s.vy / speed;
+        const tLen = s.trail * lifeFrac;
+        const emberGrad = ctx.createLinearGradient(
+          s.x, s.y, s.x + nx * tLen, s.y + ny * tLen,
+        );
+        emberGrad.addColorStop(0, `rgba(255, 140, 30, ${lifeFrac * 0.55})`);
+        emberGrad.addColorStop(1, 'rgba(180, 60, 10, 0)');
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(s.x + nx * tLen, s.y + ny * tLen);
+        ctx.strokeStyle = emberGrad;
+        ctx.lineWidth   = s.size * lifeFrac * 1.2;
+        ctx.lineCap     = 'round';
+        ctx.stroke();
+      }
+    }
+
+    // ── Glow bloom — soft radial halo ──────────────────────────
+    if (s.type === 0) {
+      ctx.shadowBlur  = 18 * lifeFrac;
+      ctx.shadowColor = `rgba(255, 200, 60, ${lifeFrac * 0.9})`;
+    } else if (s.type === 1) {
+      ctx.shadowBlur  = 10 * lifeFrac;
+      ctx.shadowColor = `rgba(255, 120, 20, ${lifeFrac * 0.7})`;
+    } else {
+      ctx.shadowBlur  = 8 * lifeFrac;
+      ctx.shadowColor = `rgba(255, 240, 100, ${lifeFrac * 0.6})`;
+    }
+
+    // ── Main spark body ─────────────────────────────────────────
+    const radius = s.size * lifeFrac;
+
+    if (s.type === 0) {
+      // Orange-yellow body
+      const r = 255;
+      const g = Math.round(160 + s.brightness * 80);
+      const b = Math.round(20  + s.brightness * 60);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, Math.max(0.1, radius), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${lifeFrac * 0.95})`;
+      ctx.fill();
+
+      // Hot white core — visible while spark is fresh (lifeFrac > 0.4)
+      if (lifeFrac > 0.35) {
+        const coreAlpha = (lifeFrac - 0.35) / 0.65;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, Math.max(0.1, radius * 0.40), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 230, ${coreAlpha})`;
+        ctx.fill();
+      }
+    } else if (s.type === 1) {
+      // Ember: copper-orange, no white core
+      const r = 255;
+      const g = Math.round(100 + s.brightness * 60);
+      const b = Math.round(10  + s.brightness * 30);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, Math.max(0.1, radius), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${lifeFrac * 0.88})`;
+      ctx.fill();
+    } else {
+      // Micro: yellow-white flash
+      const alpha = lifeFrac * 0.85;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, Math.max(0.1, radius), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 245, 160, ${alpha})`;
+      ctx.fill();
+
+      // Tiny white center
+      if (lifeFrac > 0.5) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, Math.max(0.05, radius * 0.35), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${(lifeFrac - 0.5) * 1.8})`;
+        ctx.fill();
+      }
+    }
+
     ctx.restore();
   }
 }
@@ -292,6 +429,7 @@ function drawScene(
   offset: number,
   time: number,
   sparks: Spark[],
+  intensity: number, // 1.0 = full (first strike), 0.5 = lighter (second strike)
 ) {
   ctx.clearRect(0, 0, w, h);
 
@@ -327,7 +465,7 @@ function drawScene(
 
   // ── Glow intensity — brightest when offset ≈ 0 (at impact) ────
   const angleDiff      = Math.abs(offset - 0.06);  // 0.06 is the impact offset
-  const glowIntensity  = Math.max(0, 1 - angleDiff / 0.07);
+  const glowIntensity  = Math.max(0, 1 - angleDiff / 0.07) * intensity;
 
   // ── Ambient screen glow during strike ─────────────────────────
   if (glowIntensity > 0) {
@@ -347,32 +485,100 @@ function drawScene(
   drawStrikeGlow(ctx, impactX, impactY + 4, glowIntensity);
 
   // ── Spawn sparks at strike moment ─────────────────────────────
+  // Helper: weight angle toward upward (70% upward, 20% sideways, 10% down)
+  const spawnAngle = () => {
+    const roll = Math.random();
+    if (roll < 0.70) {
+      // Upward arc: -PI to 0 (full semicircle upward), biased toward -PI/2
+      return -(Math.random() * Math.PI);
+    } else if (roll < 0.90) {
+      // Sideways: near-horizontal left or right
+      const side = Math.random() < 0.5 ? -1 : 1;
+      return side * (Math.PI * 0.35 + Math.random() * Math.PI * 0.25);
+    } else {
+      // Downward — a few sparks fall toward the anvil body
+      return Math.PI * 0.1 + Math.random() * Math.PI * 0.8;
+    }
+  };
+
   if (angleDiff < 0.05 && time % 2 === 0) {
-    const burstCount = 7;
-    for (let i = 0; i < burstCount; i++) {
-      const a     = (Math.random() * Math.PI * 1.6) - Math.PI * 1.3;
-      const speed = 3.0 + Math.random() * 6.0;
+    // ── Type 0: Large bright sparks — scaled by strike intensity ──
+    const largeCount = Math.round((5 + Math.floor(Math.random() * 4)) * intensity);
+    for (let i = 0; i < largeCount; i++) {
+      const a     = spawnAngle();
+      const speed = 4.5 + Math.random() * 6.5;
+      const maxL  = 0.7 + Math.random() * 0.5;
       sparks.push({
-        x:          impactX + (Math.random() - 0.5) * 14,
+        x:          impactX + (Math.random() - 0.5) * 10,
         y:          impactY - 2,
         vx:         Math.cos(a) * speed,
-        vy:         Math.sin(a) * speed - 3.0,
-        life:       0.6 + Math.random() * 0.5,
-        size:       1.4 + Math.random() * 3.0,
-        brightness: 0.55 + Math.random() * 0.45,
+        vy:         Math.sin(a) * speed - 1.5,
+        life:       maxL,
+        maxLife:    maxL,
+        size:       2.0 + Math.random() * 2.0,
+        brightness: 0.65 + Math.random() * 0.35,
+        type:       0,
+        trail:      6 + Math.random() * 8,
+      });
+    }
+
+    // ── Type 1: Ember particles — scaled by strike intensity ─────
+    const emberCount = Math.round((15 + Math.floor(Math.random() * 6)) * intensity);
+    for (let i = 0; i < emberCount; i++) {
+      const a     = spawnAngle();
+      const speed = 1.2 + Math.random() * 3.0;
+      const maxL  = 0.9 + Math.random() * 0.7;
+      sparks.push({
+        x:          impactX + (Math.random() - 0.5) * 16,
+        y:          impactY - 1,
+        vx:         Math.cos(a) * speed,
+        vy:         Math.sin(a) * speed - 0.8,
+        life:       maxL,
+        maxLife:    maxL,
+        size:       0.5 + Math.random() * 1.0,
+        brightness: 0.4 + Math.random() * 0.5,
+        type:       1,
+        trail:      3 + Math.random() * 4,
+      });
+    }
+
+    // ── Type 2: Micro sparks — scaled by strike intensity ────────
+    const microCount = Math.round((10 + Math.floor(Math.random() * 6)) * intensity);
+    for (let i = 0; i < microCount; i++) {
+      const a     = spawnAngle();
+      const speed = 5.5 + Math.random() * 8.0;
+      const maxL  = 0.25 + Math.random() * 0.20;
+      sparks.push({
+        x:          impactX + (Math.random() - 0.5) * 8,
+        y:          impactY - 2,
+        vx:         Math.cos(a) * speed,
+        vy:         Math.sin(a) * speed - 2.0,
+        life:       maxL,
+        maxLife:    maxL,
+        size:       0.3 + Math.random() * 0.5,
+        brightness: 0.8 + Math.random() * 0.2,
+        type:       2,
+        trail:      3 + Math.random() * 5,
       });
     }
   }
 
+  // Continuous trickle of embers while glow is visible
   if (glowIntensity > 0.18 && time % 3 === 0) {
+    const a     = spawnAngle();
+    const speed = 1.0 + Math.random() * 2.2;
+    const maxL  = 0.5 + Math.random() * 0.4;
     sparks.push({
       x:          impactX + (Math.random() - 0.5) * 22,
       y:          impactY - 3,
-      vx:         (Math.random() - 0.5) * 2.5,
-      vy:         -(1.8 + Math.random() * 2.8),
-      life:       0.4 + Math.random() * 0.32,
-      size:       0.9 + Math.random() * 1.8,
-      brightness: 0.5 + Math.random() * 0.38,
+      vx:         Math.cos(a) * speed,
+      vy:         Math.sin(a) * speed - 0.5,
+      life:       maxL,
+      maxLife:    maxL,
+      size:       0.6 + Math.random() * 1.2,
+      brightness: 0.45 + Math.random() * 0.4,
+      type:       1,
+      trail:      3 + Math.random() * 3,
     });
   }
 
@@ -398,7 +604,7 @@ export function IronAnvilSection() {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const textRef    = useRef<HTMLDivElement>(null);
   // offset: angle offset from impact (negative = raised, 0 = striking)
-  const stateRef   = useRef({ offset: 0.9, time: 0, sparks: [] as Spark[] });
+  const stateRef   = useRef({ offset: 0.9, time: 0, sparks: [] as Spark[], lastOffset: 0.9, strikeNum: 0 });
   const rafRef     = useRef(0);
 
   useEffect(() => {
@@ -426,7 +632,18 @@ export function IronAnvilSection() {
       const cw = canvas.width  / Math.min(window.devicePixelRatio, 2);
       const ch = canvas.height / Math.min(window.devicePixelRatio, 2);
       s.time += 1;
-      drawScene(ctx, cw, ch, s.offset, s.time, s.sparks);
+      // Track which strike we're on: offset drops toward 0.06 = approaching impact
+      // When offset rises back above 0.5, we've started raising = next strike incoming
+      if (s.lastOffset < 0.5 && s.offset >= 0.5) {
+        s.strikeNum += 1; // just went back up, next hit is a new strike
+      }
+      if (s.lastOffset > 0.1 && s.offset <= 0.1) {
+        // just reached impact — if strikeNum is even = first strike (intense), odd = second (lighter)
+      }
+      s.lastOffset = s.offset;
+      // intensity: 1.0 for first strike (even), 0.5 for second strike (odd)
+      const intensity = s.strikeNum % 2 === 0 ? 1.0 : 0.5;
+      drawScene(ctx, cw, ch, s.offset, s.time, s.sparks, intensity);
       rafRef.current = requestAnimationFrame(render);
     };
     rafRef.current = requestAnimationFrame(render);
