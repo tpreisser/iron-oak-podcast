@@ -36,7 +36,7 @@ export function FeaturedSeries() {
           className="text-center mb-14 transition-all duration-1000"
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)' }}
         >
-          <span className="font-[family-name:var(--font-accent)] text-sm tracking-[0.2em] uppercase text-[var(--accent-oak)]">
+          <span className="font-[family-name:var(--font-accent)] text-sm tracking-[0.2em] uppercase text-[var(--accent-oak-light)]">
             Season One
           </span>
           <h2 className="font-[family-name:var(--font-display)] text-[var(--text-h1)] text-[var(--text-primary)] mt-3 mb-3">
@@ -122,7 +122,7 @@ export function FeaturedSeries() {
             <div className="p-4 sm:p-8 md:p-10 lg:p-12 relative">
               <div className="flex flex-col gap-6">
                 {/* Phase label */}
-                <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.2em] uppercase text-[var(--accent-oak)] block">
+                <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.2em] uppercase text-[var(--accent-oak-light)] block">
                   Phase {phase.number}
                 </span>
 
@@ -139,7 +139,7 @@ export function FeaturedSeries() {
                 {/* Episode list */}
                 <div>
                   {/* Episode count label */}
-                  <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.15em] uppercase text-[var(--accent-oak)] mb-3 block">
+                  <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.15em] uppercase text-[var(--accent-oak-light)] mb-3 block">
                     {phaseEpisodes.length} Episode{phaseEpisodes.length !== 1 ? 's' : ''}
                   </span>
 
@@ -149,7 +149,7 @@ export function FeaturedSeries() {
                         key={ep.slug}
                         className="flex items-baseline gap-3 py-3 first:border-t border-[var(--border-default)]"
                       >
-                        <span className="font-[family-name:var(--font-accent)] text-xs text-[var(--accent-oak)] flex-shrink-0">
+                        <span className="font-[family-name:var(--font-accent)] text-xs text-[var(--accent-oak-light)] flex-shrink-0">
                           EP {String(ep.number).padStart(2, '0')}
                         </span>
                         <span className="font-[family-name:var(--font-body)] text-white">
