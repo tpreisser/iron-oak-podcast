@@ -21,14 +21,14 @@ export function ConceptSection() {
       // Before t=0 (section still below viewport top), opacity stays 0
       const t = Math.max(0, Math.min(1, -rect.top / (sectionH - vh)));
 
-      // Fade in (0-40%), hold (40-70%), fade out (70-100%)
+      // Fade in (0-30%), hold (30-80%), fade out (80-100%)
       let op = 0;
-      if (t < 0.40) {
-        op = t / 0.40;
-      } else if (t < 0.70) {
+      if (t < 0.30) {
+        op = t / 0.30;
+      } else if (t < 0.80) {
         op = 1;
       } else {
-        op = 1 - (t - 0.70) / 0.30;
+        op = 1 - (t - 0.80) / 0.20;
       }
 
       content.style.opacity = String(Math.max(0, Math.min(1, op)));
@@ -43,7 +43,7 @@ export function ConceptSection() {
     <section
       ref={sectionRef}
       className="relative bg-[var(--bg-primary)]"
-      style={{ height: '200vh' }}
+      style={{ height: '150vh' }}
     >
       <div
         ref={contentRef}
