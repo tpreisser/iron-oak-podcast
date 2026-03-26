@@ -106,7 +106,7 @@ export function FeaturedSeries() {
             <span
               aria-hidden="true"
               className="absolute top-4 right-6 font-[family-name:var(--font-accent)] text-[8rem] md:text-[10rem] font-bold leading-none select-none pointer-events-none"
-              style={{ color: 'rgba(107, 72, 50, 0.08)' }}
+              style={{ color: 'var(--accent-oak)', opacity: 0.08 }}
             >
               {String(phase.number).padStart(2, '0')}
             </span>

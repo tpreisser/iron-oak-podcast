@@ -51,41 +51,28 @@ export function HostsSection() {
             Your Hosts
           </span>
           <h2 className="font-[family-name:var(--font-display)] text-[var(--text-h1)] text-[var(--text-primary)] mt-2">
-            Two Perspectives. One Table.
+            Your Hosts
           </h2>
+          <p className="font-[family-name:var(--font-body)] text-[var(--text-secondary)] mt-3 text-lg">
+            Coming soon.
+          </p>
         </FadeIn>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           {hosts.map((host, i) => (
             <FadeIn key={host.name} delay={i * 200}>
-              <div className="text-center lg:text-left">
-                {/* Headshot */}
-                <div className="mb-6 flex justify-center lg:justify-start">
+              <div className="text-center">
+                {/* Initials icon */}
+                <div className="mb-6 flex justify-center">
                   <div
                     className={cn(
-                      'w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden',
-                      'border-2',
+                      'w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-2xl font-bold font-[family-name:var(--font-display)]',
                       host.texture === 'iron'
-                        ? 'border-[var(--accent-iron)]/40'
-                        : 'border-[var(--accent-oak)]/40'
+                        ? 'bg-[var(--accent-iron)]/10 text-[var(--accent-iron)] border-2 border-[var(--accent-iron)]/30'
+                        : 'bg-[var(--accent-oak)]/10 text-[var(--accent-oak)] border-2 border-[var(--accent-oak)]/30'
                     )}
                   >
-                    {hostImages[host.name] ? (
-                      <Image
-                        src={hostImages[host.name]}
-                        alt={host.name}
-                        width={200}
-                        height={200}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className={cn(
-                        'w-full h-full flex items-center justify-center text-3xl font-bold font-[family-name:var(--font-display)]',
-                        host.texture === 'iron' ? 'bg-[var(--accent-iron)]/10 text-[var(--accent-iron)]' : 'bg-[var(--accent-oak)]/10 text-[var(--accent-oak)]'
-                      )}>
-                        {host.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                    )}
+                    {host.name.split(' ').map(n => n[0]).join('')}
                   </div>
                 </div>
 
@@ -99,11 +86,7 @@ export function HostsSection() {
                 </h3>
 
                 <p className="font-[family-name:var(--font-accent)] text-sm text-[var(--text-tertiary)] tracking-wider mb-4">
-                  {host.role}
-                </p>
-
-                <p className="text-[var(--text-body)] text-[var(--text-secondary)] leading-relaxed max-w-md mx-auto lg:mx-0">
-                  {host.fullBio}
+                  Bio coming soon.
                 </p>
               </div>
             </FadeIn>
