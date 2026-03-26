@@ -30,35 +30,52 @@ export function Footer() {
             <p className="text-sm text-[var(--text-secondary)] mb-4">
               Never miss an episode. Join the launch list.
             </p>
-            <form className="flex gap-2" onSubmit={async (e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const email = (form.querySelector('input[name=email]') as HTMLInputElement)?.value;
-              try {
-                await fetch('https://formsubmit.co/ajax/tylerpreisser@gmail.com', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                  body: JSON.stringify({ email, _subject: 'New Iron & Oak Subscriber (footer)' }),
-                });
-                form.reset();
-                const btn = form.querySelector('button');
-                if (btn) { btn.textContent = 'Subscribed!'; setTimeout(() => { btn.textContent = 'Join'; }, 3000); }
-              } catch { /* silently fail */ }
-            }}>
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="Your email"
-                className="flex-1 h-10 px-4 text-sm rounded-[var(--radius-md)] bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300"
-              />
-              <button
-                type="submit"
-                className="h-10 px-4 text-sm font-medium rounded-[var(--radius-md)] bg-[var(--accent-oak)] text-white hover:bg-[var(--accent-oak-light)] transition-colors duration-300"
-              >
-                Join
-              </button>
+            <form
+              className="flex flex-col gap-2"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const data = new FormData(form);
+                try {
+                  await fetch('https://formsubmit.co/ajax/tylerpreisser@gmail.com', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({
+                      name: data.get('name'),
+                      email: data.get('email'),
+                      _subject: 'New Iron & Oak Subscriber (footer)',
+                    }),
+                  });
+                  form.reset();
+                  const btn = form.querySelector('button');
+                  if (btn) { btn.textContent = 'Subscribed!'; setTimeout(() => { btn.textContent = 'Join'; }, 3000); }
+                } catch { /* silently fail */ }
+              }}
+            >
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  placeholder="First name"
+                  className="sm:w-[120px] h-10 px-4 text-sm rounded-full bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  placeholder="Email address"
+                  className="flex-1 h-10 px-4 text-sm rounded-full bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-oak)] transition-colors duration-300"
+                />
+                <button
+                  type="submit"
+                  className="h-10 px-5 text-sm font-medium rounded-full bg-[var(--accent-oak)] text-white hover:bg-[var(--accent-oak-light)] transition-colors duration-300"
+                >
+                  Join
+                </button>
+              </div>
               <input type="hidden" name="_captcha" value="false" />
+              <input type="hidden" name="_template" value="table" />
             </form>
           </div>
 
