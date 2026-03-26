@@ -544,10 +544,12 @@ export function IronAnvilSection() {
   // offset: angle offset from impact (negative = raised, 0 = striking)
   const stateRef   = useRef({ offset: 0.9, time: 0, sparks: [] as Spark[], sparked: false });
   const rafRef     = useRef(0);
+  const visibleRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const section = sectionRef.current;
+    if (!canvas || !section) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -565,12 +567,21 @@ export function IronAnvilSection() {
     resize();
     window.addEventListener('resize', resize);
 
+    // Pause canvas rendering when section is not visible
+    const observer = new IntersectionObserver(
+      ([entry]) => { visibleRef.current = entry.isIntersecting; },
+      { rootMargin: '100px' }
+    );
+    observer.observe(section);
+
     const render = () => {
-      const s  = stateRef.current;
-      const cw = canvas.width  / Math.min(window.devicePixelRatio, 2);
-      const ch = canvas.height / Math.min(window.devicePixelRatio, 2);
-      s.time += 1;
-      drawScene(ctx, cw, ch, s.offset, s.time, s.sparks, 1.0);
+      if (visibleRef.current) {
+        const s  = stateRef.current;
+        const cw = canvas.width  / Math.min(window.devicePixelRatio, 2);
+        const ch = canvas.height / Math.min(window.devicePixelRatio, 2);
+        s.time += 1;
+        drawScene(ctx, cw, ch, s.offset, s.time, s.sparks, 1.0);
+      }
       rafRef.current = requestAnimationFrame(render);
     };
     rafRef.current = requestAnimationFrame(render);
@@ -578,6 +589,7 @@ export function IronAnvilSection() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
+      observer.disconnect();
     };
   }, []);
 

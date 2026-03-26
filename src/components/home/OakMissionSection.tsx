@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 import { useGSAP } from '@/hooks/useGSAP';
 
 interface Segment {
@@ -179,11 +179,13 @@ export function OakMissionSection() {
   const segmentsRef = useRef<Segment[]>([]);
   const progressRef = useRef(0);
   const rafRef = useRef(0);
+  const visibleRef = useRef(false);
 
   // Generate roots on mount
   useEffect(() => {
-    if (!canvasRef.current) return;
     const canvas = canvasRef.current;
+    const section = sectionRef.current;
+    if (!canvas || !section) return;
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio, 2);
@@ -202,11 +204,20 @@ export function OakMissionSection() {
     resize();
     window.addEventListener('resize', resize);
 
+    // Pause canvas rendering when section is not visible
+    const observer = new IntersectionObserver(
+      ([entry]) => { visibleRef.current = entry.isIntersecting; },
+      { rootMargin: '100px' }
+    );
+    observer.observe(section);
+
     // Render loop
     const render = () => {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        drawRoots(ctx, segmentsRef.current, progressRef.current, canvas.width, canvas.height);
+      if (visibleRef.current) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          drawRoots(ctx, segmentsRef.current, progressRef.current, canvas.width, canvas.height);
+        }
       }
       rafRef.current = requestAnimationFrame(render);
     };
@@ -215,6 +226,7 @@ export function OakMissionSection() {
     return () => {
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(rafRef.current);
+      observer.disconnect();
     };
   }, []);
 
