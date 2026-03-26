@@ -326,7 +326,7 @@ function drawScene(
   const angle = impactAngle + offset;
 
   // ── Glow intensity — brightest when offset ≈ 0 (at impact) ────
-  const angleDiff      = Math.abs(offset);
+  const angleDiff      = Math.abs(offset - 0.06);  // 0.06 is the impact offset
   const glowIntensity  = Math.max(0, 1 - angleDiff / 0.07);
 
   // ── Ambient screen glow during strike ─────────────────────────
@@ -398,7 +398,7 @@ export function IronAnvilSection() {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const textRef    = useRef<HTMLDivElement>(null);
   // offset: angle offset from impact (negative = raised, 0 = striking)
-  const stateRef   = useRef({ offset: 0.6, time: 0, sparks: [] as Spark[] });
+  const stateRef   = useRef({ offset: 0.9, time: 0, sparks: [] as Spark[] });
   const rafRef     = useRef(0);
 
   useEffect(() => {
@@ -444,21 +444,21 @@ export function IronAnvilSection() {
     // drawScene computes impactAngle fresh each frame from current
     // canvas dimensions, so the animation stays correct after resize.
     // We only tween a fixed offset value (negative = raised, 0 = striking).
-    const anim = { offset: 0.6 };
+    const anim = { offset: 0.9 };
 
     const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.5, paused: true });
 
-    // Swing down to impact
+    // Swing down — stop at +0.06 so bottom edge of head touches face (not center through it)
     tl.to(anim, {
-      offset: 0,
+      offset: 0.06,
       duration: 0.4,
       ease: 'power2.in',
       onUpdate: () => { stateRef.current.offset = anim.offset; },
     });
 
-    // Bounce back up slightly
+    // Bounce back up
     tl.to(anim, {
-      offset: 0.15,
+      offset: 0.25,
       duration: 0.25,
       ease: 'power2.out',
       onUpdate: () => { stateRef.current.offset = anim.offset; },
@@ -466,15 +466,15 @@ export function IronAnvilSection() {
 
     // Strike again
     tl.to(anim, {
-      offset: 0,
+      offset: 0.06,
       duration: 0.35,
       ease: 'power2.in',
       onUpdate: () => { stateRef.current.offset = anim.offset; },
     });
 
-    // Raise back up
+    // Raise back up high
     tl.to(anim, {
-      offset: 0.6,
+      offset: 0.9,
       duration: 0.5,
       ease: 'power2.out',
       onUpdate: () => { stateRef.current.offset = anim.offset; },
