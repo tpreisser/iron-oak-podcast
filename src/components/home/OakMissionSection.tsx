@@ -273,7 +273,7 @@ export function OakMissionSection() {
       /* Mobile: 140vh reduces the excess scroll distance between IronAnvilSection
          and OakMissionSection while keeping the roots animation fully visible.
          Tailwind min-h classes don't support non-integer vh units in v4 so inline style is correct here. */
-      style={{ minHeight: '120vh' }}
+      style={{ minHeight: '180vh' }}
     >
       {/* Canvas layer — absolutely fills the section, sticky so it stays in view while scrolling */}
       <div className="absolute inset-0 pointer-events-none">
