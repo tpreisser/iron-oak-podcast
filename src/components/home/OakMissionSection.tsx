@@ -239,9 +239,11 @@ export function OakMissionSection() {
     const handleScroll = () => {
       const rect = section.getBoundingClientRect();
       const vh = window.innerHeight;
-      const scrollable = rect.height - vh;
+      // Start progress when section top is 40% from the bottom of viewport (enters early)
+      const earlyStart = vh * 0.4;
+      const scrollable = rect.height - vh + earlyStart;
       if (scrollable <= 0) return;
-      const progress = Math.max(0, Math.min(1, -rect.top / scrollable));
+      const progress = Math.max(0, Math.min(1, (earlyStart - rect.top) / scrollable));
       progressRef.current = progress;
 
       // Fade in during 0-10%, hold 10-70%, fade out 70-100%
@@ -268,7 +270,7 @@ export function OakMissionSection() {
     <section
       ref={sectionRef}
       className="relative bg-[var(--bg-primary)] overflow-hidden"
-      style={{ minHeight: '180vh' }}
+      style={{ minHeight: '160vh' }}
     >
       {/* Canvas layer — absolutely fills the section, sticky so it stays in view while scrolling */}
       <div className="absolute inset-0 pointer-events-none">
