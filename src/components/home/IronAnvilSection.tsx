@@ -116,8 +116,7 @@ function drawHammer(
   ctx.save();
   ctx.translate(handleLength, 0);
 
-  ctx.shadowBlur  = 18;
-  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  // No shadowBlur — too expensive for 60fps canvas
 
   const headGrad = ctx.createLinearGradient(0, -headW / 2, 0, headW / 2);
   headGrad.addColorStop(0,    '#1E1E24');
@@ -183,8 +182,7 @@ function drawStrikeGlow(
   ctx.fill();
 
   ctx.save();
-  ctx.shadowBlur  = 28 * intensity;
-  ctx.shadowColor = `rgba(255, 200, 60, ${0.85 * intensity})`;
+  // No shadowBlur — using gradients instead for performance
   const innerR = 30 * intensity;
   const inner  = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
   inner.addColorStop(0,    `rgba(255, 255, 210, ${0.98 * intensity})`);
@@ -293,14 +291,11 @@ function drawSparks(
 
     // ── Glow bloom — soft radial halo ──────────────────────────
     if (s.type === 0) {
-      ctx.shadowBlur  = 18 * lifeFrac;
-      ctx.shadowColor = `rgba(255, 200, 60, ${lifeFrac * 0.9})`;
+      // Glow via larger transparent circle instead of shadowBlur
     } else if (s.type === 1) {
-      ctx.shadowBlur  = 10 * lifeFrac;
-      ctx.shadowColor = `rgba(255, 120, 20, ${lifeFrac * 0.7})`;
+      // No shadowBlur for ember sparks
     } else {
-      ctx.shadowBlur  = 8 * lifeFrac;
-      ctx.shadowColor = `rgba(255, 240, 100, ${lifeFrac * 0.6})`;
+      // No shadowBlur for micro sparks
     }
 
     // ── Main spark body ─────────────────────────────────────────
