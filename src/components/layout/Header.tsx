@@ -20,12 +20,13 @@ export function Header() {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        'fixed left-0 right-0 z-50 transition-all duration-300',
         scrolled
           ? 'backdrop-blur-[12px] bg-[var(--bg-primary)]/80 shadow-[0_1px_0_rgba(255,255,255,0.06)]'
           : 'bg-transparent'
       )}
       style={{
+        top: 0,
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingLeft: 'env(safe-area-inset-left, 0px)',
         paddingRight: 'env(safe-area-inset-right, 0px)',

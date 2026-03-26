@@ -123,9 +123,6 @@ html {
   /* Prevent iOS Safari from inflating text size on rotation */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Respect safe area insets for notched/Dynamic Island devices */
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
 }
 
 body {
