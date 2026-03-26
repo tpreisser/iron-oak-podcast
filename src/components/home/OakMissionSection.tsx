@@ -240,31 +240,30 @@ export function OakMissionSection() {
       const rect = section.getBoundingClientRect();
       const vh = window.innerHeight;
 
-      // Pixels scrolled past the section top entering the viewport
-      // 0 = section top just reached viewport top
-      // positive = scrolled past that point
-      const scrolled = -rect.top;
+      // How many pixels of the section are visible from the bottom of viewport
+      // Positive as soon as the section top enters the viewport from below
+      const visibleFromBottom = vh - rect.top;
 
-      // Roots progress: 0 at entry, 1 after 600px of scrolling
-      progressRef.current = Math.max(0, Math.min(1, scrolled / 600));
+      // Roots progress: start as soon as section appears, complete over 500px
+      progressRef.current = Math.max(0, Math.min(1, visibleFromBottom / 500));
 
-      // Opacity: fixed pixel distances, not ratios
-      // Fade in: from 0px to 100px scrolled past section top
-      // Hold: from 100px to (sectionBottom - viewport - 200px)
-      // Fade out: last 200px before section leaves
+      // Opacity: start visible as soon as section appears on screen
+      // Fade in: first 150px of the section being visible
+      // Hold: everything in between
+      // Fade out: last 200px before section bottom leaves viewport
       const distFromBottom = rect.bottom - vh;
 
       let opacity = 0;
-      if (scrolled < 0) {
-        opacity = 0; // haven't reached section yet
-      } else if (scrolled < 100) {
-        opacity = scrolled / 100; // fade in over 100px
+      if (visibleFromBottom < 0) {
+        opacity = 0;
+      } else if (visibleFromBottom < 150) {
+        opacity = visibleFromBottom / 150;
       } else if (distFromBottom > 200) {
-        opacity = 1; // hold
+        opacity = 1;
       } else if (distFromBottom > 0) {
-        opacity = distFromBottom / 200; // fade out over last 200px
+        opacity = distFromBottom / 200;
       } else {
-        opacity = 0; // past section
+        opacity = 0;
       }
       opacity = Math.max(0, Math.min(1, opacity));
 
