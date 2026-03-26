@@ -240,28 +240,30 @@ export function OakMissionSection() {
       const rect = section.getBoundingClientRect();
       const vh = window.innerHeight;
 
-      // How many pixels of the section are visible from the bottom of viewport
-      // Positive as soon as the section top enters the viewport from below
-      const visibleFromBottom = vh - rect.top;
+      // How far the section top has scrolled past the bottom of the viewport
+      // 0 = section top is at the bottom edge of the screen
+      // vh = section top has reached the top of the screen
+      const entered = vh - rect.top;
 
-      // Roots progress: start 300px BEFORE section even enters viewport, complete over 400px
-      progressRef.current = Math.max(0, Math.min(1, (visibleFromBottom + 300) / 400));
+      // Roots: start when section is halfway up the screen, complete over 800px
+      progressRef.current = Math.max(0, Math.min(1, (entered - vh * 0.3) / 800));
 
-      // Opacity: start visible as soon as section appears on screen
-      // Fade in: first 150px of the section being visible
-      // Hold: everything in between
-      // Fade out: last 200px before section bottom leaves viewport
+      // Opacity: visible once section is 30% up the screen, fade out at very end
       const distFromBottom = rect.bottom - vh;
 
       let opacity = 0;
-      if (visibleFromBottom < -200) {
+      if (entered < vh * 0.3) {
+        // Section hasn't risen 30% into viewport yet
         opacity = 0;
-      } else if (visibleFromBottom < 0) {
-        opacity = (visibleFromBottom + 200) / 200;
-      } else if (distFromBottom > 200) {
+      } else if (entered < vh * 0.3 + 200) {
+        // Fade in over 200px
+        opacity = (entered - vh * 0.3) / 200;
+      } else if (distFromBottom > 150) {
+        // Hold
         opacity = 1;
       } else if (distFromBottom > 0) {
-        opacity = distFromBottom / 200;
+        // Fade out last 150px
+        opacity = distFromBottom / 150;
       } else {
         opacity = 0;
       }
