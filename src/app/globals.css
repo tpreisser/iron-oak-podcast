@@ -49,15 +49,15 @@
   --accent-iron: #8A9BAE;
   --accent-iron-light: #B8C5D4;
 
-  /* Accent — Oak (dark brown from brand "OAK" text) */
-  --accent-oak: #8B6340;
-  --accent-oak-light: #C8956C;
-  --accent-oak-glow: rgba(139, 99, 64, 0.15);
+  /* Accent — Oak (dark brown matching "OAK" text in logo) */
+  --accent-oak: #6B4832;
+  --accent-oak-light: #8B6340;
+  --accent-oak-glow: rgba(107, 72, 50, 0.15);
 
   /* Borders & Shadows */
   --border-default: #2A2E36;
   --border-hover: #3A3F4A;
-  --shadow-glow: 0 0 40px rgba(139, 99, 64, 0.12);
+  --shadow-glow: 0 0 40px rgba(107, 72, 50, 0.12);
 
   /* Typography Scale */
   /* Hero: 2.5rem (40px) on iPhone SE → 7rem on desktop */
