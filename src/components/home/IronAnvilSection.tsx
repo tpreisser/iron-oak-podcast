@@ -448,7 +448,7 @@ export function IronAnvilSection() {
 
     const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.5, paused: true });
 
-    // Swing down — stop at +0.06 so bottom edge of head touches face (not center through it)
+    // Swing down to anvil face
     tl.to(anim, {
       offset: 0.06,
       duration: 0.4,
@@ -456,26 +456,26 @@ export function IronAnvilSection() {
       onUpdate: () => { stateRef.current.offset = anim.offset; },
     });
 
-    // Bounce back up
+    // Back all the way up
     tl.to(anim, {
-      offset: 0.25,
-      duration: 0.25,
+      offset: 0.9,
+      duration: 0.45,
       ease: 'power2.out',
       onUpdate: () => { stateRef.current.offset = anim.offset; },
     });
 
-    // Strike again
+    // Swing down again
     tl.to(anim, {
       offset: 0.06,
-      duration: 0.35,
+      duration: 0.4,
       ease: 'power2.in',
       onUpdate: () => { stateRef.current.offset = anim.offset; },
     });
 
-    // Raise back up high
+    // Back all the way up
     tl.to(anim, {
       offset: 0.9,
-      duration: 0.5,
+      duration: 0.45,
       ease: 'power2.out',
       onUpdate: () => { stateRef.current.offset = anim.offset; },
     });
