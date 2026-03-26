@@ -30,10 +30,10 @@ export function ConceptSection() {
       const scrolled = (vh - rect.top) / totalScroll;
       const t = Math.max(0, Math.min(1, scrolled));
 
-      // Fade in during first 15% of scroll, hold, fade out during last 20%
+      // Fade in during first 35% of scroll, hold, fade out during last 20%
       let op = 0;
-      if (t < 0.15) {
-        op = t / 0.15;
+      if (t < 0.35) {
+        op = t / 0.35;
       } else if (t < 0.80) {
         op = 1;
       } else {

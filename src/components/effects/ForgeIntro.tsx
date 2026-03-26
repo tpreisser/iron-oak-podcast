@@ -58,7 +58,8 @@ export function ForgeIntro() {
     }
     // Always play the intro on every fresh page load
     setAnimating(true);
-    const logoTimer = setTimeout(() => setLogoVisible(true), 300);
+    // Longer delay so embers establish first, then logo fades in smoothly
+    const logoTimer = setTimeout(() => setLogoVisible(true), 800);
     return () => clearTimeout(logoTimer);
   }, []);
 
@@ -210,8 +211,8 @@ export function ForgeIntro() {
 
       <div
         className={cn(
-          'relative z-10 text-center transition-all duration-1000',
-          logoVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          'relative z-10 text-center transition-opacity duration-[1500ms] ease-in-out',
+          logoVisible ? 'opacity-100' : 'opacity-0'
         )}
       >
         <Image
