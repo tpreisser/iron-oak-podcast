@@ -3,7 +3,7 @@
 export function ConceptSection() {
   return (
     /* pt reduced on mobile: 24rem (pt-64) is too tall on 667px phones — swap to 32 (8rem) on mobile */
-    <section className="relative bg-[var(--bg-primary)] pt-48 md:pt-64 lg:pt-80 pb-48 md:pb-40 lg:pb-40 z-10">
+    <section className="relative bg-[var(--bg-primary)] pt-72 md:pt-80 lg:pt-96 pb-48 md:pb-40 lg:pb-40 z-10">
       <div className="max-w-2xl mx-auto px-6 text-center">
         {/* text-lg on mobile keeps the quote readable without dominating the screen */}
         <p className="font-[family-name:var(--font-display)] text-lg md:text-2xl lg:text-3xl text-[var(--text-primary)] leading-relaxed italic" style={{ opacity: 1 }}>

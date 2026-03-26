@@ -368,7 +368,7 @@ function drawScene(
 
   // ── Layout anchors ─────────────────────────────────────────────
   const anvilCX    = w * 0.62;
-  const anvilTopY  = h * 0.38;
+  const anvilTopY  = h * 0.30;
   const anvilScale = 0.88;
 
   // Impact point: where the hammer face contacts the anvil
@@ -434,7 +434,7 @@ function drawScene(
     }
   };
 
-  if (angleDiff < 0.08 && time % 4 === 0 && sparks.length < 50) {
+  if (angleDiff < 0.12 && sparks.length < 40) {
     // ── Type 0: Large bright sparks — scaled by strike intensity ──
     const largeCount = Math.round((5 + Math.floor(Math.random() * 4)) * intensity);
     for (let i = 0; i < largeCount; i++) {
