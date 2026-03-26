@@ -151,7 +151,7 @@ export default function RootLayout({
               <ScrollToTop />
               <ForgeIntro />
               <IronSparks />
-              <Header />
+              {/* Header removed */}
               {/* padding-top compensates for the extra height the header gains from
                   env(safe-area-inset-top) on notched iPhones. Page-level components
                   already handle normal header height (pt-24 etc.) — this only adds
