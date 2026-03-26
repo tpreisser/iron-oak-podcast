@@ -20,14 +20,13 @@ export function Header() {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled
-          ? 'backdrop-blur-[12px] bg-[var(--bg-primary)]/80'
-          : ''
+        'fixed top-0 left-0 right-0 z-50',
+        scrolled && 'backdrop-blur-[12px] bg-[var(--bg-primary)]/80'
       )}
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="container-default flex items-center h-16 lg:h-20">
+      <div className="flex items-center h-16 lg:h-20 px-4 sm:px-6 lg:px-8"
+        style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <Image
             src={assetPath("/images/iron-oak-icon.webp")}
