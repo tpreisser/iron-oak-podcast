@@ -368,7 +368,7 @@ function drawScene(
 
   // ── Layout anchors ─────────────────────────────────────────────
   const anvilCX    = w * 0.62;
-  const anvilTopY  = h * 0.30;
+  const anvilTopY  = h * 0.25;
   const anvilScale = 0.88;
 
   // Impact point: where the hammer face contacts the anvil
