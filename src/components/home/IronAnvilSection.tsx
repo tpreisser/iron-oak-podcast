@@ -604,7 +604,7 @@ export function IronAnvilSection() {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const textRef    = useRef<HTMLDivElement>(null);
   // offset: angle offset from impact (negative = raised, 0 = striking)
-  const stateRef   = useRef({ offset: 0.9, time: 0, sparks: [] as Spark[], lastOffset: 0.9, strikeNum: 0 });
+  const stateRef   = useRef({ offset: 0.9, time: 0, sparks: [] as Spark[] });
   const rafRef     = useRef(0);
 
   useEffect(() => {
@@ -632,18 +632,7 @@ export function IronAnvilSection() {
       const cw = canvas.width  / Math.min(window.devicePixelRatio, 2);
       const ch = canvas.height / Math.min(window.devicePixelRatio, 2);
       s.time += 1;
-      // Track which strike we're on: offset drops toward 0.06 = approaching impact
-      // When offset rises back above 0.5, we've started raising = next strike incoming
-      if (s.lastOffset < 0.5 && s.offset >= 0.5) {
-        s.strikeNum += 1; // just went back up, next hit is a new strike
-      }
-      if (s.lastOffset > 0.1 && s.offset <= 0.1) {
-        // just reached impact — if strikeNum is even = first strike (intense), odd = second (lighter)
-      }
-      s.lastOffset = s.offset;
-      // intensity: 1.0 for first strike (even), 0.5 for second strike (odd)
-      const intensity = s.strikeNum % 2 === 0 ? 1.0 : 0.5;
-      drawScene(ctx, cw, ch, s.offset, s.time, s.sparks, intensity);
+      drawScene(ctx, cw, ch, s.offset, s.time, s.sparks, 1.0);
       rafRef.current = requestAnimationFrame(render);
     };
     rafRef.current = requestAnimationFrame(render);
@@ -682,16 +671,8 @@ export function IronAnvilSection() {
     });
 
     // ── ScrollTrigger: pin section, play/pause animation ───────────
-    ScrollTrigger.create({
-      trigger:     sectionRef.current,
-      start:       'top top',
-      end:         '+=180%',
-      pin:         true,
-      onEnter:     () => tl.play(),
-      onLeave:     () => tl.pause(),
-      onEnterBack: () => tl.play(),
-      onLeaveBack: () => tl.pause(),
-    });
+    // Just play immediately — no pinning, no scroll gating
+    tl.play();
 
     // ── Text animation: scroll-triggered fade-in (separate ScrollTrigger) ─
     const textElements = textRef.current.querySelectorAll('.why-text-item');
