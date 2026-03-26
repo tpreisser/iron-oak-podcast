@@ -647,7 +647,7 @@ export function IronAnvilSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-screen bg-[var(--bg-primary)] overflow-hidden"
+      className="relative min-h-screen bg-[var(--bg-primary)] overflow-hidden will-change-transform"
     >
       <div className="absolute inset-0 flex items-center">
         {/* Text — left side.
@@ -674,7 +674,7 @@ export function IronAnvilSection() {
             Mobile: reduced opacity so it reads as a background texture behind the text.
             lg+: full opacity, constrained to right 58%.
         */}
-        <div className="absolute right-0 top-0 bottom-0 w-full lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100">
+        <div className="absolute right-0 top-0 bottom-0 w-full lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100 will-change-transform">
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
       </div>

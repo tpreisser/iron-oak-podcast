@@ -242,6 +242,7 @@ export function OakMissionSection() {
         start: 'top top',
         end: '+=180%',
         pin: true,
+        pinType: 'transform',  // Use transform instead of position:fixed to avoid layout reflow on pin/unpin
         scrub: 0.8,
       },
     });
@@ -279,7 +280,7 @@ export function OakMissionSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-screen bg-[var(--bg-primary)] overflow-hidden"
+      className="relative min-h-screen bg-[var(--bg-primary)] overflow-hidden will-change-transform"
     >
       <div className="absolute inset-0 flex items-center">
         {/* Text — left side
@@ -309,7 +310,7 @@ export function OakMissionSection() {
             as a background element but don't dominate the readable text area.
             lg+: normal positioning w-[73%] -right-[15%].
         */}
-        <div className="absolute -right-[30%] lg:-right-[15%] top-0 bottom-0 w-[90%] lg:w-[73%] pointer-events-none opacity-40 lg:opacity-100">
+        <div className="absolute -right-[30%] lg:-right-[15%] top-0 bottom-0 w-[90%] lg:w-[73%] pointer-events-none opacity-40 lg:opacity-100 will-change-transform">
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
       </div>

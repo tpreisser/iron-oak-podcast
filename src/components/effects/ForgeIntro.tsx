@@ -227,11 +227,13 @@ export function ForgeIntro() {
         />
       </div>
 
-      {/* bottom + safe area: accounts for iOS home indicator on notched devices */}
+      {/* bottom + safe area: accounts for iOS home indicator on notched devices.
+          bottom-8 + safe-area-inset-bottom clears the iOS home indicator on notched devices.
+          Using paddingBottom instead of marginBottom so it works as an absolute-positioned element. */}
       {animating && (
         <p
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-white/30 tracking-wider"
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-white/30 tracking-wider whitespace-nowrap"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           Tap anywhere to continue
         </p>
