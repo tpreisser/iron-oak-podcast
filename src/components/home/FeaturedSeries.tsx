@@ -42,7 +42,7 @@ export function FeaturedSeries() {
           <h2 className="font-[family-name:var(--font-display)] text-[var(--text-h1)] text-[var(--text-primary)] mt-3 mb-3">
             {series.title}
           </h2>
-          <p className="font-[family-name:var(--font-body)] text-[var(--text-secondary)] max-w-2xl mx-auto text-lg">
+          <p className="font-[family-name:var(--font-body)] text-white/70 max-w-2xl mx-auto text-lg">
             Five phases. Twelve episodes. The whole story of the Christian faith.
           </p>
         </div>
@@ -77,7 +77,7 @@ export function FeaturedSeries() {
                       'border-2 z-10 relative',
                       i <= activePhase
                         ? 'bg-[var(--accent-oak)] border-[var(--accent-oak)] text-white'
-                        : 'bg-[var(--bg-primary)] border-[var(--border-default)] text-[var(--text-tertiary)]'
+                        : 'bg-[var(--bg-primary)] border-[var(--accent-iron)]/30 text-[var(--accent-iron)]'
                     )}
                     style={{
                       transform: i === activePhase ? 'scale(1.2)' : 'scale(1)',
@@ -89,7 +89,7 @@ export function FeaturedSeries() {
                     className={cn(
                       'mt-3 text-xs md:text-sm font-medium transition-colors duration-300 text-center',
                       'font-[family-name:var(--font-accent)]',
-                      i === activePhase ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]'
+                      i === activePhase ? 'text-white' : 'text-[var(--accent-iron)]'
                     )}
                   >
                     <span className="hidden md:inline">{p.name}</span>
@@ -119,19 +119,19 @@ export function FeaturedSeries() {
                 </span>
 
                 {/* Phase title */}
-                <h3 className="font-[family-name:var(--font-display)] text-[var(--text-h2)] text-[var(--text-primary)] -mt-4">
+                <h3 className="font-[family-name:var(--font-display)] text-[var(--text-h2)] text-white -mt-4">
                   {phase.name}
                 </h3>
 
                 {/* Description */}
-                <p className="font-[family-name:var(--font-body)] text-[var(--text-secondary)] leading-relaxed">
+                <p className="font-[family-name:var(--font-body)] text-white/70 leading-relaxed">
                   {phase.description}
                 </p>
 
                 {/* Episode list */}
                 <div>
                   {/* Episode count label */}
-                  <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.15em] uppercase text-[var(--text-tertiary)] mb-3 block">
+                  <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.15em] uppercase text-[var(--accent-oak)] mb-3 block">
                     {phaseEpisodes.length} Episode{phaseEpisodes.length !== 1 ? 's' : ''}
                   </span>
 
@@ -144,7 +144,7 @@ export function FeaturedSeries() {
                         <span className="font-[family-name:var(--font-accent)] text-xs text-[var(--accent-oak)] flex-shrink-0">
                           EP {String(ep.number).padStart(2, '0')}
                         </span>
-                        <span className="font-[family-name:var(--font-body)] text-[var(--text-primary)]">
+                        <span className="font-[family-name:var(--font-body)] text-white">
                           {ep.title}
                         </span>
                       </div>
@@ -156,9 +156,9 @@ export function FeaturedSeries() {
           </div>
 
           {/* Stats */}
-          <div className="mt-8 flex items-center justify-center gap-8 text-sm text-[var(--text-tertiary)]">
+          <div className="mt-8 flex items-center justify-center gap-8 text-sm text-white/50">
             <span className="font-[family-name:var(--font-accent)] tracking-wider">12 episodes</span>
-            <span className="w-1 h-1 rounded-full bg-[var(--text-tertiary)]" />
+            <span className="w-1 h-1 rounded-full bg-[var(--accent-oak)]" />
             <span className="font-[family-name:var(--font-accent)] tracking-wider">One story</span>
           </div>
         </div>
