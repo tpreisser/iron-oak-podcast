@@ -21,8 +21,6 @@ export function FeaturedSeries() {
     return () => observer.disconnect();
   }, []);
 
-  const prev = () => setActivePhase(p => Math.max(0, p - 1));
-  const next = () => setActivePhase(p => Math.min(series.phases.length - 1, p + 1));
   const phase = series.phases[activePhase];
   const phaseEpisodes = episodes.filter(ep => ep.phaseNumber === phase.number);
 
@@ -44,7 +42,7 @@ export function FeaturedSeries() {
           <h2 className="font-[family-name:var(--font-display)] text-[var(--text-h1)] text-[var(--text-primary)] mt-3 mb-3">
             {series.title}
           </h2>
-          <p className="text-[var(--text-secondary)] max-w-2xl mx-auto text-lg">
+          <p className="font-[family-name:var(--font-body)] text-[var(--text-secondary)] max-w-2xl mx-auto text-lg">
             Five phases. Twelve episodes. The whole story of the Christian faith.
           </p>
         </div>
@@ -55,10 +53,12 @@ export function FeaturedSeries() {
         >
           {/* Phase selector bar */}
           <div className="relative mb-10">
+            {/* Full connecting line */}
             <div className="absolute top-5 left-0 right-0 h-[2px] bg-[var(--border-default)]" />
+            {/* Filled portion up to active dot */}
             <div
               className="absolute top-5 left-0 h-[2px] bg-[var(--accent-oak)] transition-all duration-500"
-              style={{ width: `${((activePhase + 1) / series.phases.length) * 100}%` }}
+              style={{ width: `${(activePhase / (series.phases.length - 1)) * 100}%` }}
             />
 
             <div className="relative flex justify-between">
@@ -66,12 +66,12 @@ export function FeaturedSeries() {
                 <button
                   key={p.slug}
                   onClick={() => setActivePhase(i)}
-                  // min-w/min-h ensure 44px tap target on mobile (Apple HIG)
                   className="flex flex-col items-center group min-w-[44px] min-h-[44px] pt-0.5"
+                  aria-label={`Phase ${p.number}: ${p.name}`}
+                  aria-pressed={i === activePhase}
                 >
                   <div
                     className={cn(
-                      // w-11 h-11 = 44px — meets minimum touch target size
                       'w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold',
                       'font-[family-name:var(--font-accent)] transition-all duration-300',
                       'border-2 z-10 relative',
@@ -79,12 +79,16 @@ export function FeaturedSeries() {
                         ? 'bg-[var(--accent-oak)] border-[var(--accent-oak)] text-white'
                         : 'bg-[var(--bg-primary)] border-[var(--border-default)] text-[var(--text-tertiary)]'
                     )}
+                    style={{
+                      transform: i === activePhase ? 'scale(1.2)' : 'scale(1)',
+                    }}
                   >
                     {p.number}
                   </div>
                   <span
                     className={cn(
                       'mt-3 text-xs md:text-sm font-medium transition-colors duration-300 text-center',
+                      'font-[family-name:var(--font-accent)]',
                       i === activePhase ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]'
                     )}
                   >
@@ -96,85 +100,59 @@ export function FeaturedSeries() {
             </div>
           </div>
 
-          {/* Arrow navigation + detail card */}
-          <div className="flex items-stretch gap-4">
-            {/* Left arrow — w-10 on mobile saves space, w-12 on sm+ */}
-            <button
-              onClick={prev}
-              disabled={activePhase === 0}
-              className={cn(
-                'flex-shrink-0 w-10 sm:w-12 min-h-[44px] flex items-center justify-center rounded-[var(--radius-lg)] border transition-all duration-300',
-                activePhase === 0
-                  ? 'border-[var(--border-default)] text-[var(--text-tertiary)] opacity-30 cursor-not-allowed'
-                  : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--accent-oak)] hover:text-[var(--accent-oak)]'
-              )}
+          {/* Detail card */}
+          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden relative">
+            {/* Large watermark phase number */}
+            <span
+              aria-hidden="true"
+              className="absolute top-4 right-6 font-[family-name:var(--font-accent)] text-[8rem] md:text-[10rem] font-bold leading-none select-none pointer-events-none"
+              style={{ color: 'rgba(107, 72, 50, 0.08)' }}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+              {String(phase.number).padStart(2, '0')}
+            </span>
 
-            {/* Detail card */}
-            <div className="flex-1 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden min-w-0">
-              <div className="p-5 sm:p-8 md:p-10 lg:p-12">
-                <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
-                  {/* Phase number */}
-                  <span className="font-[family-name:var(--font-accent)] text-6xl md:text-7xl font-bold text-[var(--accent-oak)]/20 leading-none flex-shrink-0">
-                    {String(phase.number).padStart(2, '0')}
+            <div className="p-5 sm:p-8 md:p-10 lg:p-12 relative">
+              <div className="flex flex-col gap-6">
+                {/* Phase label */}
+                <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.2em] uppercase text-[var(--accent-oak)] block">
+                  Phase {phase.number}
+                </span>
+
+                {/* Phase title */}
+                <h3 className="font-[family-name:var(--font-display)] text-[var(--text-h2)] text-[var(--text-primary)] -mt-4">
+                  {phase.name}
+                </h3>
+
+                {/* Description */}
+                <p className="font-[family-name:var(--font-body)] text-[var(--text-secondary)] leading-relaxed">
+                  {phase.description}
+                </p>
+
+                {/* Episode list */}
+                <div>
+                  {/* Episode count label */}
+                  <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.15em] uppercase text-[var(--text-tertiary)] mb-3 block">
+                    {phaseEpisodes.length} Episode{phaseEpisodes.length !== 1 ? 's' : ''}
                   </span>
 
-                  <div className="flex-1">
-                    <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.2em] uppercase text-[var(--accent-oak)] mb-2 block">
-                      Phase {phase.number}
-                    </span>
-                    <h3 className="font-[family-name:var(--font-display)] text-[var(--text-h2)] text-[var(--text-primary)] mb-3">
-                      {phase.name}
-                    </h3>
-                    <p className="text-[var(--text-secondary)] leading-relaxed mb-6">
-                      {phase.description}
-                    </p>
-
-                    {/* Episode list */}
-                    <div>
-                      <span className="font-[family-name:var(--font-accent)] text-xs tracking-[0.15em] uppercase text-[var(--text-tertiary)] mb-3 block">
-                        {phaseEpisodes.length} Episode{phaseEpisodes.length !== 1 ? 's' : ''}
-                      </span>
-                      <div className="space-y-2">
-                        {phaseEpisodes.map(ep => (
-                          <div
-                            key={ep.slug}
-                            className="flex items-baseline gap-3 py-2 border-b border-[var(--border-default)] last:border-0"
-                          >
-                            <span className="font-[family-name:var(--font-accent)] text-xs text-[var(--accent-oak)] flex-shrink-0">
-                              EP {String(ep.number).padStart(2, '0')}
-                            </span>
-                            <span className="font-[family-name:var(--font-display)] text-[var(--text-primary)]">
-                              {ep.title}
-                            </span>
-                          </div>
-                        ))}
+                  <div className="divide-y divide-[var(--border-default)]">
+                    {phaseEpisodes.map(ep => (
+                      <div
+                        key={ep.slug}
+                        className="flex items-baseline gap-3 py-3 first:border-t border-[var(--border-default)]"
+                      >
+                        <span className="font-[family-name:var(--font-accent)] text-xs text-[var(--accent-oak)] flex-shrink-0">
+                          EP {String(ep.number).padStart(2, '0')}
+                        </span>
+                        <span className="font-[family-name:var(--font-body)] text-[var(--text-primary)]">
+                          {ep.title}
+                        </span>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Right arrow */}
-            <button
-              onClick={next}
-              disabled={activePhase === series.phases.length - 1}
-              className={cn(
-                'flex-shrink-0 w-10 sm:w-12 min-h-[44px] flex items-center justify-center rounded-[var(--radius-lg)] border transition-all duration-300',
-                activePhase === series.phases.length - 1
-                  ? 'border-[var(--border-default)] text-[var(--text-tertiary)] opacity-30 cursor-not-allowed'
-                  : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--accent-oak)] hover:text-[var(--accent-oak)]'
-              )}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
 
           {/* Stats */}
