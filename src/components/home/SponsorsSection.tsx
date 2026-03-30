@@ -1,7 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-import { assetPath } from "@/lib/basePath";
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 
 export function SponsorsSection() {
@@ -15,13 +13,9 @@ export function SponsorsSection() {
         </ScrollReveal>
 
         <ScrollReveal delay={0.1} className="flex justify-center">
-          <Image
-            src={assetPath("/images/enertech-logo.svg")}
-            alt="Enertech — Wichita, Kansas"
-            width={500}
-            height={150}
-            className="w-[200px] sm:w-[280px] md:w-[380px] lg:w-[450px] h-auto max-w-full"
-          />
+          <span className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[var(--text-primary)] tracking-wide">
+            Mark G. Allen
+          </span>
         </ScrollReveal>
       </div>
     </section>
