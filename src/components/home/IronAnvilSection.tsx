@@ -363,12 +363,15 @@ function drawScene(
   time: number,
   sparks: Spark[],
   intensity: number, // 1.0 = full (first strike), 0.5 = lighter (second strike)
+  yOffset: number = 0, // extra canvas space above the visible section (desktop headroom)
 ) {
   ctx.clearRect(0, 0, w, h);
 
   // ── Layout anchors ─────────────────────────────────────────────
+  // yOffset shifts everything down so the anvil stays visually in the same
+  // position while the canvas extends above the section for hammer headroom.
   const anvilCX    = w * 0.62;
-  const anvilTopY  = h * 0.25;
+  const anvilTopY  = (h - yOffset) * 0.25 + yOffset;
   const anvilScale = 0.88;
 
   // Impact point: where the hammer face contacts the anvil
@@ -569,13 +572,17 @@ export function IronAnvilSection() {
     );
     observer.observe(section);
 
+    // Desktop: canvas extends 200px above section; pass yOffset so
+    // drawScene positions the anvil correctly within the visible area.
+    const isDesktop = () => window.innerWidth >= 1024;
+
     const render = () => {
       if (visibleRef.current) {
         const s  = stateRef.current;
         const cw = canvas.width  / Math.min(window.devicePixelRatio, 2);
         const ch = canvas.height / Math.min(window.devicePixelRatio, 2);
         s.time += 1;
-        drawScene(ctx, cw, ch, s.offset, s.time, s.sparks, 1.0);
+        drawScene(ctx, cw, ch, s.offset, s.time, s.sparks, 1.0, isDesktop() ? 250 : 0);
       }
       rafRef.current = requestAnimationFrame(render);
     };
@@ -642,7 +649,7 @@ export function IronAnvilSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative z-10 min-h-[70vh] lg:min-h-screen bg-[var(--bg-primary)] will-change-transform"
+      className="relative lg:z-10 min-h-[70vh] lg:min-h-screen bg-[var(--bg-primary)] will-change-transform"
     >
       <div className="absolute inset-0 flex items-center">
         {/* Text — left side.
@@ -670,11 +677,12 @@ export function IronAnvilSection() {
             lg+: full opacity, constrained to right 58%.
         */}
         {/* Canvas container.
-            Mobile: -top-[25%] keeps the hammer animation in view (was -top-[80%] which
-            pushed the canvas so far up only the static anvil base was visible).
-            lg+: -top-[60px] gives hammer swing 60px headroom above section.
+            Mobile: -top-[25%] keeps the hammer animation in view.
+            lg+: -top-[250px] extends canvas above section so the hammer
+            swing isn't clipped. drawScene receives yOffset=250 to keep
+            the anvil visually in the same position.
         */}
-        <div className="absolute right-0 -top-[25%] lg:-top-[60px] bottom-0 w-[70%] lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100 will-change-transform">
+        <div className="absolute right-0 -top-[25%] lg:-top-[250px] bottom-0 w-[70%] lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100 will-change-transform">
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
       </div>
