@@ -642,9 +642,9 @@ export function IronAnvilSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[70vh] lg:min-h-screen bg-[var(--bg-primary)] will-change-transform"
+      className="relative z-10 min-h-[70vh] lg:min-h-screen bg-[var(--bg-primary)] will-change-transform"
     >
-      <div className="absolute inset-0 flex items-center lg:items-start lg:pt-[20vh]">
+      <div className="absolute inset-0 flex items-center">
         {/* Text — left side.
             Mobile: full-width so text is fully readable.
             lg+: 42% so canvas has room on the right.
@@ -672,9 +672,9 @@ export function IronAnvilSection() {
         {/* Canvas container.
             Mobile: -top-[25%] keeps the hammer animation in view (was -top-[80%] which
             pushed the canvas so far up only the static anvil base was visible).
-            lg+: top-0 (full height, no offset needed).
+            lg+: -top-[60px] gives hammer swing 60px headroom above section.
         */}
-        <div className="absolute right-0 -top-[25%] lg:top-0 bottom-0 w-[70%] lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100 will-change-transform">
+        <div className="absolute right-0 -top-[25%] lg:-top-[60px] bottom-0 w-[70%] lg:w-[58%] pointer-events-none opacity-30 lg:opacity-100 will-change-transform">
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
       </div>
